@@ -23,17 +23,38 @@ hub.emit('volante-mongo.connect', {
   dbhost: "127.0.0.1", // mongod address
   dbname: "test",      // mongo database name to open
   dbopts: {},          // options object passed to driver on connect
-  root: "mongodb"      // root for emitted events (e.g. 'mongodb.connected')
+  oplog: false,        // flag to enable oplog monitoring
+  rsname: '$main       // replica-set name (only used when oplog: true)
 });
 ```
 
 ## Events
 
-- `volante-mongo.connected`
+### Handled
+
+- `volante-mongo.connect`
+  ```js
+  {
+    dbhost: String,
+    dbname: String,
+    dbopts: Object,
+    oplog: Boolean,
+    rsname: String
+  }
+  ```
+- `volante-mongo.watch`
+  ```js
+  String // collection name to watch
+  ```
+
+
+### Emitted
+
+- `volante-mongo.connected` - on connected with Db object
   ```js
   mongo.Db // native driver Db object
   ```
-- `volante-mongo.insert`
+- `volante-mongo.insert` - only when `oplog: true`
   ```js
   {
     ns: String,
@@ -41,7 +62,7 @@ hub.emit('volante-mongo.connect', {
     o: Object
   }
   ```
-- `volante-mongo.update`
+- `volante-mongo.update` - only when `oplog: true`
   ```js
   {
     ns: String,
@@ -49,7 +70,7 @@ hub.emit('volante-mongo.connect', {
     o: Object
   }
   ```
-- `volante-mongo.delete`
+- `volante-mongo.delete` - only when `oplog: true`
   ```js
   {
     ns: String,
@@ -57,6 +78,7 @@ hub.emit('volante-mongo.connect', {
     o: Object
   }
   ```
+- `volante-mongo.disconnected` - on disconnect or connection loss
 
 ## License
 
