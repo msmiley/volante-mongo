@@ -1,5 +1,3 @@
-# Volante Mongo Handler
-
 volante module for mongodb
 
 Provides simple connection using the native mongodb node.js driver, as well as
@@ -24,7 +22,7 @@ hub.emit('volante-mongo.connect', {
   dbname: "test",      // mongo database name to open
   dbopts: {},          // options object passed to driver on connect
   oplog: false,        // flag to enable oplog monitoring
-  rsname: '$main       // replica-set name (only used when oplog: true)
+  rsname: '$main'      // replica-set name (only used when oplog: true)
 });
 ```
 
