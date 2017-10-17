@@ -16,7 +16,7 @@ Volante modules are automatically loaded and instanced if they are installed loc
 
 ## Options
 
-Options are changed using the `volante-console.options` event with an options object:
+Options are changed using the `volante-mongo.connect` event with an options object:
 
 ```js
 hub.emit('volante-mongo.connect', {
