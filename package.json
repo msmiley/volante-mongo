@@ -1,0 +1,15 @@
+{
+  "name": "volante-mongo",
+  "version": "1.0.0",
+  "description": "volante module for mongodb",
+  "author": "Mike Smiley <msmiley@alumni.rice.edu>",
+  "url": "https://github.com/msmiley/volante-mongo",
+  "repository": "msmiley/volante-mongo.git",
+  "license": "ISC",
+  "dependencies": {
+    "mongo-oplog": "^2.0.2",
+    "mongodb": "^2.2.31",
+    "volante": "^1.0.0"
+  },
+  "keywords": ["volante"]
+}
