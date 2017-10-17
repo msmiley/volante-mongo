@@ -36,25 +36,25 @@ hub.emit('volante-mongo.connect', {
 - `volante-mongo.insert`
   ```js
   {
-    ns: <namespace>,
-    _id: <_id>,
-    o: <obj>
+    ns: String,
+    _id: mongo.ObjectId,
+    o: Object
   }
   ```
 - `volante-mongo.update`
   ```js
   {
-    ns: <namespace>,
-    _id: <_id>,
-    o: <obj>
+    ns: String,
+    _id: mongo.ObjectId,
+    o: Object
   }
   ```
 - `volante-mongo.delete`
   ```js
   {
-    ns: <namespace>,
-    _id: <_id>,
-    o: <obj>
+    ns: String,
+    _id: mongo.ObjectId,
+    o: Object
   }
   ```
 
