@@ -1,3 +1,5 @@
+# Volante MongoDb Handler
+
 volante module for mongodb
 
 Provides simple connection using the native mongodb node.js driver, as well as
