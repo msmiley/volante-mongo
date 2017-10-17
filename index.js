@@ -20,7 +20,7 @@ class VolanteMongo extends volante.Spoke {
       rsname: '$main'
     };
 
-    // the reference to the driver db object
+    // the reference to the driver mongo.Db object
     this.db = null;
 
     // watched namespaces

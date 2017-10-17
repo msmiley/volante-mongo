@@ -31,7 +31,7 @@ hub.emit('volante-mongo.connect', {
 
 - `volante-mongo.connected`
   ```js
-  Db // native driver Db object
+  mongo.Db // native driver Db object
   ```
 - `volante-mongo.insert`
   ```js
