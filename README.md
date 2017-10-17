@@ -12,7 +12,7 @@ model and are emitted on the hub.
 npm install volante-mongo
 ```
 
-Volante modules are automatically loaded if they are found in the `node_modules` directory.
+Volante modules are automatically loaded and instanced if they are installed locally and `hub.attachAll()` is called.
 
 ## Options
 
@@ -29,7 +29,35 @@ hub.emit('volante-mongo.connect', {
 
 ## Events
 
-'volante-mongo.connected', db object
-'volante-mongo.insert', { ns: <namespace>, _id: <_id>, o: <obj> }
-'volante-mongo.update', { ns: <namespace>, _id: <_id>, o: <obj> }
-'volante-mongo.delete', { ns: <namespace>, _id: <_id>, o: <obj> }
+- `volante-mongo.connected`
+  ```js
+  Db // native driver Db object
+  ```
+- `volante-mongo.insert`
+  ```js
+  {
+    ns: <namespace>,
+    _id: <_id>,
+    o: <obj>
+  }
+  ```
+- `volante-mongo.update`
+  ```js
+  {
+    ns: <namespace>,
+    _id: <_id>,
+    o: <obj>
+  }
+  ```
+- `volante-mongo.delete`
+  ```js
+  {
+    ns: <namespace>,
+    _id: <_id>,
+    o: <obj>
+  }
+  ```
+
+## License
+
+ISC
