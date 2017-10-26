@@ -1,4 +1,4 @@
-# Volante MongoDb Handler
+# Volante MongoDb Spoke
 
 volante module for mongodb
 
@@ -49,6 +49,8 @@ hub.emit('volante-mongo.connect', {
 
 
 ### Emitted
+
+In addition to native Volante log events, this modules also emits:
 
 - `volante-mongo.connected` - on connected with Db object
   ```js

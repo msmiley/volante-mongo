@@ -62,6 +62,7 @@ class VolanteMongo extends volante.Spoke {
   // watch the specified namespace for changes
   //
   watch(collection) {
+    this.options.oplog = true; // set to true as convenience
     if (this.watched.indexOf(collection) === -1) {
       this.debug(`watching the ${collection} collection`);
       this.watched.push(collection);
@@ -84,6 +85,7 @@ class VolanteMongo extends volante.Spoke {
 
     // error on connection close
     this.db.on('close', () => {
+      this.log(`mongodb disconnected from ${this.options.dbhost}`);
       this.hub.emit('volante-mongo.disconnected');
     });
 
