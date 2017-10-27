@@ -143,7 +143,7 @@ class VolanteMongo extends volante.Spoke {
   // Get collection name from full namespace
   //
   getCollection(ns) {
-    return ns.split('.').slice(-1);
+    return ns.split('.').pop();
   }
 
 }
