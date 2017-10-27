@@ -46,6 +46,7 @@ hub.emit('volante-mongo.connect', {
   ```js
   String // collection name to watch
   ```
+  > Note: oplog option is forced to true if this event is emitted
 
 
 ### Emitted
@@ -59,25 +60,28 @@ In addition to native Volante log events, this modules also emits:
 - `volante-mongo.insert` - only when `oplog: true`
   ```js
   {
-    ns: String,
-    _id: mongo.ObjectId,
-    o: Object
+    ns: String,          // full namespace
+    coll: String,        // collection name only
+    _id: mongo.ObjectId, // _id of inserted doc
+    o: Object            // entire inserted doc
   }
   ```
 - `volante-mongo.update` - only when `oplog: true`
   ```js
   {
-    ns: String,
-    _id: mongo.ObjectId,
-    o: Object
+    ns: String,          // full namespace
+    coll: String,        // collection name only
+    _id: mongo.ObjectId, // _id of updated doc
+    o: Object            // query mathing object
   }
   ```
 - `volante-mongo.delete` - only when `oplog: true`
   ```js
   {
-    ns: String,
-    _id: mongo.ObjectId,
-    o: Object
+    ns: String,          // full namespace
+    coll: String,        // collection name only
+    _id: mongo.ObjectId, // _id of deleted doc
+    o: Object            // object provided by oplog
   }
   ```
 - `volante-mongo.disconnected` - on disconnect or connection loss

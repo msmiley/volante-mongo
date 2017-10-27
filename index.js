@@ -105,6 +105,7 @@ class VolanteMongo extends volante.Spoke {
     this.oplog.on('insert', (doc) => {
       this.hub.emit(`volante-mongo.insert`, {
         ns: doc.ns,
+        coll: this.getCollection(doc.ns),
         _id: doc.o._id,
         o: doc.o
       });
@@ -113,6 +114,7 @@ class VolanteMongo extends volante.Spoke {
     this.oplog.on('update', (doc) => {
       this.hub.emit(`volante-mongo.update`, {
         ns: doc.ns,
+        coll: this.getCollection(doc.ns),
         _id: doc.o2._id, // use the o2 object instead
         o: doc.o
       });
@@ -121,6 +123,7 @@ class VolanteMongo extends volante.Spoke {
     this.oplog.on('delete', (doc) => {
       this.hub.emit(`volante-mongo.delete`, {
         ns: doc.ns,
+        coll: this.getCollection(doc.ns),
         _id: doc.o._id,
         o: doc.o
       });
@@ -134,6 +137,13 @@ class VolanteMongo extends volante.Spoke {
     this.oplog.tail()
     .then(() => this.debug('oplog tailing started'))
     .catch((err) => this.error(err));
+  }
+
+  //
+  // Get collection name from full namespace
+  //
+  getCollection(ns) {
+    return ns.split('.').slice(-1);
   }
 
 }
