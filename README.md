@@ -16,10 +16,10 @@ Volante modules are automatically loaded and instanced if they are installed loc
 
 ## Options
 
-Options are changed using the `volante-mongo.connect` event with an options object:
+Options are changed using the `VolanteMongo.connect` event with an options object:
 
 ```js
-hub.emit('volante-mongo.connect', {
+hub.emit('VolanteMongo.connect', {
   dbhost: "127.0.0.1", // mongod address
   dbname: "test",      // mongo database name to open
   dbopts: {},          // options object passed to driver on connect
@@ -32,7 +32,7 @@ hub.emit('volante-mongo.connect', {
 
 ### Handled
 
-- `volante-mongo.connect`
+- `VolanteMongo.connect`
   ```js
   {
     dbhost: String,
@@ -42,7 +42,7 @@ hub.emit('volante-mongo.connect', {
     rsname: String
   }
   ```
-- `volante-mongo.watch`
+- `VolanteMongo.watch`
   ```js
   String // collection name to watch
   ```
@@ -53,11 +53,11 @@ hub.emit('volante-mongo.connect', {
 
 In addition to native Volante log events, this modules also emits:
 
-- `volante-mongo.connected` - on connected with Db object
+- `VolanteMongo.connected` - on connected with Db object
   ```js
-  mongo.Db // native driver Db object
+  mongo.Db // native driver Db object, can be used for any db driver calls
   ```
-- `volante-mongo.insert` - only when `oplog: true`
+- `VolanteMongo.insert` - only when `oplog: true`
   ```js
   {
     ns: String,          // full namespace
@@ -66,7 +66,7 @@ In addition to native Volante log events, this modules also emits:
     o: Object            // entire inserted doc
   }
   ```
-- `volante-mongo.update` - only when `oplog: true`
+- `VolanteMongo.update` - only when `oplog: true`
   ```js
   {
     ns: String,          // full namespace
@@ -75,7 +75,7 @@ In addition to native Volante log events, this modules also emits:
     o: Object            // query mathing object
   }
   ```
-- `volante-mongo.delete` - only when `oplog: true`
+- `VolanteMongo.delete` - only when `oplog: true`
   ```js
   {
     ns: String,          // full namespace
@@ -84,7 +84,7 @@ In addition to native Volante log events, this modules also emits:
     o: Object            // object provided by oplog
   }
   ```
-- `volante-mongo.disconnected` - on disconnect or connection loss
+- `VolanteMongo.disconnected` - on disconnect or connection loss
 
 ## License
 
