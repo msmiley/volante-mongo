@@ -7,14 +7,11 @@ const MongoOplog = require('mongo-oplog');
 //
 module.exports = {
 	name: 'VolanteMongo',
-  //
-  // volante init()
-  //
-  init() {
-	},
 	events: {
-    'VolanteMongo.connect'(opts) {
-      this.connect(opts);
+		// force connect (only necessary if defaults are used, otherwise, emit a 
+		// 'VolanteMongo.props' event with the proper info)
+    'VolanteMongo.connect'() {
+      this.connect();
     },
     'VolanteMongo.watch'(coll) {
       this.watch(coll);
@@ -29,15 +26,15 @@ module.exports = {
     oplog: false,
     rsname: '$main',
   },
+	updated() {
+		this.connect();
+	},
 	methods: {
 		//
 		// Process the provided options and connect to mongodb
 		//
-		connect(opts) {
-		  // merge options
-		  Object.assign(this, opts);
-
-		  this.log(`Connecting to mongodb at ${this.dbhost}`);
+		connect() {
+		  this.log(`Connecting to mongodb at: ${this.dbhost} using db: ${this.dbname}`);
 
 		  var fullhost = this.dbhost;
 

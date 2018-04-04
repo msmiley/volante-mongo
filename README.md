@@ -14,12 +14,12 @@ npm install volante-mongo
 
 Volante modules are automatically loaded and instanced if they are installed locally and `hub.attachAll()` is called.
 
-## Options
+## Props
 
-Options are changed using the `VolanteMongo.connect` event with an options object:
+Options are changed using the `VolanteMongo.props` event with an options object:
 
 ```js
-hub.emit('VolanteMongo.connect', {
+hub.emit('VolanteMongo.props', {
   dbhost: "127.0.0.1", // mongod address
   dbname: "test",      // mongo database name to open
   dbopts: {},          // options object passed to driver on connect
@@ -28,20 +28,13 @@ hub.emit('VolanteMongo.connect', {
 });
 ```
 
+> The module will automatically start a connection when the props are changed.
+
 ## Events
 
 ### Handled
 
-- `VolanteMongo.connect`
-  ```js
-  {
-    dbhost: String,
-    dbname: String,
-    dbopts: Object,
-    oplog: Boolean,
-    rsname: String
-  }
-  ```
+- `VolanteMongo.connect` - start connection, really only useful if using the defaults
 - `VolanteMongo.watch`
   ```js
   String // collection name to watch
