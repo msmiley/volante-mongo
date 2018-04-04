@@ -11,11 +11,6 @@ module.exports = {
   // volante init()
   //
   init() {
-    // the reference to the driver mongo.Db object
-    this.db = null;
-
-    // watched namespaces
-    this.watched = [];
 	},
 	events: {
     'VolanteMongo.connect'(opts) {
@@ -26,6 +21,8 @@ module.exports = {
     },
   },
 	props: {
+		db: null, 	 // the reference to the driver mongo.Db object
+		watched: [], // watched namespaces
     dbhost: '127.0.0.1',
     dbname: 'test',
     dbopts: {},
@@ -74,7 +71,7 @@ module.exports = {
 		  // save to instance variable
 		  this.db = db;
 
-		  this.$hub.emit('VolanteMongo.connected', this.db);
+		  this.$emit('VolanteMongo.connected', this.db);
 		  if (this.oplog && this.watched.length > 0) {
 		    this.tailOplog();
 		  }
@@ -82,7 +79,7 @@ module.exports = {
 		  // error on connection close
 		  this.db.on('close', () => {
 		    this.log(`mongodb disconnected from ${this.dbhost}`);
-		    this.$hub.emit('VolanteMongo.disconnected');
+		    this.$emit('VolanteMongo.disconnected');
 		  });
 		},
 		//
@@ -97,7 +94,7 @@ module.exports = {
 		  });
 
 		  this.mongoOplog.on('insert', (doc) => {
-		    this.$hub.emit(`VolanteMongo.insert`, {
+		    this.$emit(`VolanteMongo.insert`, {
 		      ns: doc.ns,
 		      coll: this.getCollection(doc.ns),
 		      _id: doc.o._id,
@@ -106,7 +103,7 @@ module.exports = {
 		  });
 
 		  this.mongoOplog.on('update', (doc) => {
-		    this.$hub.emit(`VolanteMongo.update`, {
+		    this.$emit(`VolanteMongo.update`, {
 		      ns: doc.ns,
 		      coll: this.getCollection(doc.ns),
 		      _id: doc.o2._id, // use the o2 object instead
@@ -115,7 +112,7 @@ module.exports = {
 		  });
 
 		  this.mongoOplog.on('delete', (doc) => {
-		    this.$hub.emit(`VolanteMongo.delete`, {
+		    this.$emit(`VolanteMongo.delete`, {
 		      ns: doc.ns,
 		      coll: this.getCollection(doc.ns),
 		      _id: doc.o._id,
