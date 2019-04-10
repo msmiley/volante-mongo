@@ -1,4 +1,4 @@
-const mongo = require('mongodb')
+const mongo = require('mongodb');
 const MongoClient = mongo.MongoClient;
 const MongoOplog = require('mongo-oplog');
 
@@ -18,17 +18,17 @@ module.exports = {
       this.watch(ns);
     },
     // CRUD API overlay
-    'Volante.create'(ns, doc) {
+    'volante.create'(ns, doc) {
     	this.handleCrud && this.insertOne(ns, doc);
     },
-    'Volante.read'(ns, query, callback) {
+    'volante.read'(ns, query, callback) {
     	this.handleCrud && this.find(ns, query, callback);
     },
-    'Volante.update'(ns, _id, doc) {
-    	this.handleCrud && this.updateOne(ns, _id, doc);
+    'volante.update'(ns, id, doc) {
+    	this.handleCrud && this.updateOne(ns, id, doc);
     },
-    'Volante.delete'(ns, _id) {
-    	this.handleCrud && this.deleteOne(ns, _id);
+    'volante.delete'(ns, id) {
+    	this.handleCrud && this.deleteOne(ns, id);
     },
   },
 	props: {
@@ -93,11 +93,19 @@ module.exports = {
 		    this.tailOplog();
 		  }
 
-		  // // error on connection close
-		  // this.db.on('close', () => {
-		  //   this.$log(`mongodb disconnected from ${this.dbhost}`);
-		  //   this.$emit('VolanteMongo.disconnected');
-		  // });
+			// attach events to admin db
+			let db = client.db('admin');
+
+		  // error on connection close
+		  db.on('close', () => {
+		    this.$log(`mongodb disconnected from ${this.dbhost}`);
+		    this.$emit('VolanteMongo.disconnected');
+		  });
+		  // announce a reconnect
+		  db.on('reconnect', () => {
+		  	this.$log(`mongodb reconnected to ${this.dbhost}`);
+		  	this.$emit('VolanteMongo.connected', this.client);
+		  });
 		},
 		error(err) {
 			this.$error(err);
@@ -109,8 +117,10 @@ module.exports = {
 		//
 		find(ns, query, callback) {
 			if (this.client) {
+				this.$debug('find');
 				let coll = this.getCollection(ns);
 				if (typeof(query) === 'string') {
+
 					coll.findOne({ _id: mongo.ObjectID(query) }, (err, doc) => {
 						if (err) {
 							this.$error(err);
@@ -134,8 +144,13 @@ module.exports = {
 		//
 		// Use mongodb node.js driver insertOne()
 		//
-		insertOne(ns, doc) {
+		insertOne(ns, id, doc) {
 			if (this.client) {
+				this.$debug('insertOne');
+				// add a custom id if id is set
+				if (id) {
+					doc.id = id;
+				}
 				this.getCollection(ns).insertOne(doc, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -145,9 +160,10 @@ module.exports = {
 				this.$error('db client not ready');
 			}
 		},
-		updateOne(ns, _id, doc) {
+		updateOne(ns, id, doc) {
 			if (this.client) {
-				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(_id) }, { $set: doc }, (err, result) => {
+				this.$debug('updateOne');
+				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(id) }, { $set: doc }, (err, result) => {
 					if (err) {
 						this.$error(err);
 					}
@@ -156,9 +172,10 @@ module.exports = {
 				this.$error('db client not ready');
 			}
 		},
-		deleteOne(ns, _id) {
+		deleteOne(ns, id) {
 			if (this.client) {
-				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(_id) }, (err, result) => {
+				this.$debug('deleteOne');
+				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
 					if (err) {
 						this.$error(err);
 					}
