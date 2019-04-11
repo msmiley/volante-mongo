@@ -117,7 +117,7 @@ module.exports = {
 		//
 		find(ns, query, callback) {
 			if (this.client) {
-				this.$debug('find');
+				this.$isDebug && this.$debug('find', query);
 				let coll = this.getCollection(ns);
 				if (typeof(query) === 'string') {
 
@@ -144,13 +144,9 @@ module.exports = {
 		//
 		// Use mongodb node.js driver insertOne()
 		//
-		insertOne(ns, id, doc) {
+		insertOne(ns, doc) {
 			if (this.client) {
-				this.$debug('insertOne');
-				// add a custom id if id is set
-				if (id) {
-					doc.id = id;
-				}
+				this.$isDebug && this.$debug('insertOne', doc);
 				this.getCollection(ns).insertOne(doc, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -162,7 +158,7 @@ module.exports = {
 		},
 		updateOne(ns, id, doc) {
 			if (this.client) {
-				this.$debug('updateOne');
+				this.$isDebug && this.$debug('updateOne', id, doc);
 				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(id) }, { $set: doc }, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -174,7 +170,7 @@ module.exports = {
 		},
 		deleteOne(ns, id) {
 			if (this.client) {
-				this.$debug('deleteOne');
+				this.$isDebug && this.$debug('deleteOne', id);
 				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
 					if (err) {
 						this.$error(err);
