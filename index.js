@@ -18,17 +18,17 @@ module.exports = {
       this.watch(ns);
     },
     // CRUD API overlay
-    'volante.create'(ns, doc) {
-    	this.handleCrud && this.insertOne(ns, doc);
+    'volante.create'(ns, doc, callback) {
+    	this.handleCrud && this.insertOne(ns, doc, callback);
     },
     'volante.read'(ns, query, callback) {
     	this.handleCrud && this.find(ns, query, callback);
     },
-    'volante.update'(ns, id, doc) {
-    	this.handleCrud && this.updateOne(ns, id, doc);
+    'volante.update'(ns, id, doc, callback) {
+    	this.handleCrud && this.updateOne(ns, id, doc, callback);
     },
-    'volante.delete'(ns, id) {
-    	this.handleCrud && this.deleteOne(ns, id);
+    'volante.delete'(ns, id, callback) {
+    	this.handleCrud && this.deleteOne(ns, id, callback);
     },
   },
 	props: {
@@ -124,16 +124,18 @@ module.exports = {
 					coll.findOne({ _id: mongo.ObjectID(query) }, (err, doc) => {
 						if (err) {
 							this.$error(err);
+							callback && callback(err);
 						} else {
-							callback && callback(doc);
+							callback && callback(null, doc);
 						}
 					});
 				} else {
 					coll.find(query, this.findOptions).toArray((err, docs) => {
 						if (err) {
 							this.$error(err);
+							callback && callback(err);
 						} else {
-							callback && callback(docs);
+							callback && callback(null, docs);
 						}
 					});
 				}
@@ -144,19 +146,22 @@ module.exports = {
 		//
 		// Use mongodb node.js driver insertOne()
 		//
-		insertOne(ns, doc) {
+		insertOne(ns, doc, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('insertOne', doc);
 				this.getCollection(ns).insertOne(doc, (err, result) => {
 					if (err) {
 						this.$error(err);
+						callback && callback(err);
+					} else {
+						callback && callback(null, result);
 					}
 				});
 			} else {
 				this.$error('db client not ready');
 			}
 		},
-		updateOne(ns, id, doc) {
+		updateOne(ns, id, doc, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('updateOne', id, doc);
 				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(id) }, { $set: doc }, (err, result) => {
@@ -168,7 +173,7 @@ module.exports = {
 				this.$error('db client not ready');
 			}
 		},
-		deleteOne(ns, id) {
+		deleteOne(ns, id, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('deleteOne', id);
 				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
