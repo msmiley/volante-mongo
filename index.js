@@ -37,7 +37,7 @@ module.exports = {
 		watched: [],  // watched namespaces
     dbhost: '127.0.0.1',
     dbport: 27017,
-    dbopts: {
+    dbopts: { // native node.js driver options
     	useNewUrlParser: true,
     },
     oplog: false,
@@ -46,6 +46,7 @@ module.exports = {
     findOptions: {},
   },
 	updated() {
+		this.handleCrud && this.$log('listening for volante CRUD operations');
 		this.connect();
 	},
 	methods: {
