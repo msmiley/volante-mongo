@@ -17,24 +17,45 @@ module.exports = {
     'VolanteMongo.watch'(ns) {
       this.watch(ns);
     },
-    // CRUD API overlay
-    'volante.create'(ns, doc, callback) {
-    	this.handleCrud && this.insertOne(ns, doc, callback);
+    // Volante CRUD API overlay
+    'volante.create'(name, obj, callback) {
+    	this.handleCrud && this.insertOne(name, obj, callback);
     },
-    'volante.read'(ns, query, callback) {
-    	this.handleCrud && this.find(ns, query, callback);
+    'volante.read'(name, query, callback) {
+    	this.handleCrud && this.find(name, query, {}, callback);
     },
-    'volante.update'(ns, id, doc, callback) {
-    	this.handleCrud && this.updateOne(ns, id, doc, callback);
+    'volante.update'(name, id, obj, callback) {
+    	this.handleCrud && this.updateOne(name, id, obj, callback);
     },
-    'volante.delete'(ns, id, callback) {
-    	this.handleCrud && this.deleteOne(ns, id, callback);
+    'volante.delete'(name, id, callback) {
+    	this.handleCrud && this.deleteOne(name, id, callback);
+    },
+    // standard mongo-specific API
+    'mongo.insertOne'(ns, doc, callback) {
+    	this.insertOne(ns, doc, callback);
+    },
+    'mongo.find'(ns, query, options, callback) {
+    	this.find(ns, query, options, callback);
+    },
+    'mongo.updateOne'(ns, id, doc, callback) {
+    	this.updateOne(ns, id, doc, callback);
+    },
+    'mongo.deleteOne'(ns, id, callback) {
+    	this.deleteOne(ns, id, callback);
+    },
+    'mongo.aggregate'(ns, pipeline, callback) {
+    	this.aggregate(ns, pipeline, callback);
     },
   },
+  done() {
+  	if (this.client) {
+  		this.client.close(true);
+  		this.client = null;
+  		this.$log('MongoClient closed');
+  	}
+  },
 	props: {
-		client: null, // MongoClient object
 		handleCrud: false, // flag whether module should listen for crud events
-		watched: [],  // watched namespaces
     dbhost: '127.0.0.1',
     dbport: 27017,
     dbopts: { // native node.js driver options
@@ -43,7 +64,10 @@ module.exports = {
     oplog: false,
     rsname: '$main',
     retryInterval: 10000,
-    findOptions: {},
+  },
+  data: {
+		client: null, // MongoClient object
+		watched: [],  // watched namespaces
   },
 	updated() {
 		this.handleCrud && this.$log('listening for volante CRUD operations');
@@ -68,7 +92,7 @@ module.exports = {
 		  MongoClient
 		  .connect(fullhost, this.dbopts)
 		  .then(client => this.success(client))
-		  .catch(err => this.error(err));
+		  .catch(err => this.mongoError(err));
 		},
 		//
 		// watch the specified namespace for changes
@@ -108,20 +132,21 @@ module.exports = {
 		  	this.$emit('VolanteMongo.connected', this.client);
 		  });
 		},
-		error(err) {
+		mongoError(err) {
 			this.$error(err);
-			this.$log(`retrying in ${this.retryInterval}ms`);
-			setTimeout(() => this.connect(), this.retryInterval);
+			if (err.errno === 'ECONNREFUSED') {
+				this.$log(`retrying in ${this.retryInterval}ms`);
+				setTimeout(() => this.connect(), this.retryInterval);
+			}
 		},
 		//
 		// Use mongodb node.js driver find()
 		//
-		find(ns, query, callback) {
+		find(ns, query, options, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('find', query);
+				this.$isDebug && this.$debug('find', ns, query);
 				let coll = this.getCollection(ns);
 				if (typeof(query) === 'string') {
-
 					coll.findOne({ _id: mongo.ObjectID(query) }, (err, doc) => {
 						if (err) {
 							this.$error(err);
@@ -131,7 +156,7 @@ module.exports = {
 						}
 					});
 				} else {
-					coll.find(query, this.findOptions).toArray((err, docs) => {
+					coll.find(query, options).toArray((err, docs) => {
 						if (err) {
 							this.$error(err);
 							callback && callback(err);
@@ -149,7 +174,7 @@ module.exports = {
 		//
 		insertOne(ns, doc, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('insertOne', doc);
+				this.$isDebug && this.$debug('insertOne', ns, doc);
 				this.getCollection(ns).insertOne(doc, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -164,7 +189,7 @@ module.exports = {
 		},
 		updateOne(ns, id, doc, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('updateOne', id, doc);
+				this.$isDebug && this.$debug('updateOne', ns, id, doc);
 				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(id) }, { $set: doc }, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -176,7 +201,7 @@ module.exports = {
 		},
 		deleteOne(ns, id, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('deleteOne', id);
+				this.$isDebug && this.$debug('deleteOne', ns, id);
 				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
 					if (err) {
 						this.$error(err);
@@ -184,6 +209,25 @@ module.exports = {
 				});
 			} else {
 				this.$error('db client not ready');
+			}
+		},
+		aggregate(ns, pipeline, callback) {
+			if (this.client) {
+				this.$isDebug && this.$debug('aggregate', ns, pipeline);
+				this.getCollection(ns).aggregate(pipeline, {}, (err, cursor) => {
+					if (err) {
+						this.$error(err);
+						callback && callback(err);
+					} else {
+						cursor.toArray((err, docs) => {
+							if (err) {
+								callback && callback(err);
+							} else {
+								callback && callback(null, docs);
+							}
+						});
+					}
+				});
 			}
 		},
 		//
@@ -243,8 +287,12 @@ module.exports = {
 		  return [s[0], s.splice(1).join('.')];
 		},
 		getCollection(ns) {
-			let sns = this.splitNamespace(ns);
-			return this.client.db(sns[0]).collection(sns[1]);
+			if (typeof(ns) !== 'string') {
+				throw this.$error('not valid namespace');
+			} else {
+				let sns = this.splitNamespace(ns);
+				return this.client.db(sns[0]).collection(sns[1]);
+			}
 		}
 	},
 };
