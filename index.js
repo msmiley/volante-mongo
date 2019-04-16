@@ -25,7 +25,7 @@ module.exports = {
     	this.handleCrud && this.find(name, query, {}, callback);
     },
     'volante.update'(name, id, obj, callback) {
-    	this.handleCrud && this.updateOne(name, id, obj, callback);
+    	this.handleCrud && this.updateOne(name, { _id: mongo.ObjectID(id) }, { $set: obj }, {}, callback);
     },
     'volante.delete'(name, id, callback) {
     	this.handleCrud && this.deleteOne(name, id, callback);
@@ -37,8 +37,8 @@ module.exports = {
     'mongo.find'(ns, query, options, callback) {
     	this.find(ns, query, options, callback);
     },
-    'mongo.updateOne'(ns, id, doc, callback) {
-    	this.updateOne(ns, id, doc, callback);
+    'mongo.updateOne'(ns, filter, update, options, callback) {
+    	this.updateOne(ns, filter, update, options, callback);
     },
     'mongo.deleteOne'(ns, id, callback) {
     	this.deleteOne(ns, id, callback);
@@ -187,10 +187,10 @@ module.exports = {
 				this.$error('db client not ready');
 			}
 		},
-		updateOne(ns, id, doc, callback) {
+		updateOne(ns, filter, update, options, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('updateOne', ns, id, doc);
-				this.getCollection(ns).updateOne({ _id: mongo.ObjectID(id) }, { $set: doc }, (err, result) => {
+				this.$isDebug && this.$debug('updateOne', ns, filter, update);
+				this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
 					if (err) {
 						this.$error(err);
 					}
