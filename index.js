@@ -193,6 +193,9 @@ module.exports = {
 				this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
 					if (err) {
 						this.$error(err);
+						callback && callback(err);
+					} else {
+						callback && callback(null, result);
 					}
 				});
 			} else {
@@ -205,6 +208,9 @@ module.exports = {
 				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
 					if (err) {
 						this.$error(err);
+						callback && callback(err);
+					} else {
+						callback && callback(null, result);
 					}
 				});
 			} else {
