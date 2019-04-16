@@ -10,16 +10,18 @@ module.exports = {
 	name: 'VolanteMongo',
 	events: {
 		// force connect (only necessary if defaults are used, otherwise, emit a
-		// 'VolanteMongo.props' event with the proper info)
+		// 'VolanteMongo.update' event with the proper info)
     'VolanteMongo.connect'() {
       this.connect();
     },
     'VolanteMongo.watch'(ns) {
       this.watch(ns);
     },
+    //
     // Volante CRUD API overlay
+    //
     'volante.create'(name, obj, callback) {
-    	this.handleCrud && this.insertOne(name, obj, callback);
+    	this.handleCrud && this.insertOne(name, obj, {}, callback);
     },
     'volante.read'(name, query, callback) {
     	this.handleCrud && this.find(name, query, {}, callback);
@@ -28,11 +30,13 @@ module.exports = {
     	this.handleCrud && this.updateOne(name, { _id: mongo.ObjectID(id) }, { $set: obj }, {}, callback);
     },
     'volante.delete'(name, id, callback) {
-    	this.handleCrud && this.deleteOne(name, id, callback);
+    	this.handleCrud && this.deleteOne(name, { _id: mongo.ObjectID(id) }, {}, callback);
     },
+    //
     // standard mongo-specific API
-    'mongo.insertOne'(ns, doc, callback) {
-    	this.insertOne(ns, doc, callback);
+    //
+    'mongo.insertOne'(ns, doc, options, callback) {
+    	this.insertOne(ns, doc, options, callback);
     },
     'mongo.find'(ns, query, options, callback) {
     	this.find(ns, query, options, callback);
@@ -40,8 +44,8 @@ module.exports = {
     'mongo.updateOne'(ns, filter, update, options, callback) {
     	this.updateOne(ns, filter, update, options, callback);
     },
-    'mongo.deleteOne'(ns, id, callback) {
-    	this.deleteOne(ns, id, callback);
+    'mongo.deleteOne'(ns, filter, options, callback) {
+    	this.deleteOne(ns, filter, options, callback);
     },
     'mongo.aggregate'(ns, pipeline, callback) {
     	this.aggregate(ns, pipeline, callback);
@@ -172,10 +176,10 @@ module.exports = {
 		//
 		// Use mongodb node.js driver insertOne()
 		//
-		insertOne(ns, doc, callback) {
+		insertOne(ns, doc, options, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('insertOne', ns, doc);
-				this.getCollection(ns).insertOne(doc, (err, result) => {
+				this.getCollection(ns).insertOne(doc, options, (err, result) => {
 					if (err) {
 						this.$error(err);
 						callback && callback(err);
@@ -202,10 +206,10 @@ module.exports = {
 				this.$error('db client not ready');
 			}
 		},
-		deleteOne(ns, id, callback) {
+		deleteOne(ns, filter, options, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('deleteOne', ns, id);
-				this.getCollection(ns).deleteOne({ _id: mongo.ObjectID(id) }, (err, result) => {
+				this.$isDebug && this.$debug('deleteOne', ns, filter);
+				this.getCollection(ns).deleteOne(filter, options, (err, result) => {
 					if (err) {
 						this.$error(err);
 						callback && callback(err);
