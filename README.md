@@ -2,9 +2,8 @@
 
 volante module for mongodb
 
-Provides simple connection using the native mongodb node.js driver, as well as
-oplog monitoring for specified collections. All events follow the Volante hub/spoke
-model and are emitted on the hub.
+Provides simple connection using the native mongodb node.js driver.
+All events follow the Volante hub/spoke model and are emitted on the hub.
 
 ## Usage
 
@@ -16,16 +15,14 @@ Volante modules are automatically loaded and instanced if they are installed loc
 
 ## Props
 
-Options are changed using the `VolanteMongo.props` event with an options object:
+Options are changed using the `VolanteMongo.update` event with an options object:
 
 ```js
-hub.emit('VolanteMongo.props', {
+hub.emit('VolanteMongo.update', {
   dbhost: "127.0.0.1",  // mongod address
   dbopts: {},           // options object passed to driver on connect
-  oplog: false,         // flag to enable oplog monitoring
-  rsname: '$main',      // replica-set name (only used when oplog: true)
   retryInterval: 10000, // retry timeout when mongo connection lost
-  handleCrud: false,    // flag to enable crud handlers (volante.read, etc...)
+  handleCrud: false,    // flag to enable generid crud handlers (volante.read, etc...)
 });
 ```
 
@@ -35,12 +32,7 @@ hub.emit('VolanteMongo.props', {
 
 ### Handled
 
-- `VolanteMongo.connect` - start connection, really only useful if using the defaults
-- `VolanteMongo.watch`
-  ```js
-  String // collection name to watch
-  ```
-  > Note: oplog option is forced to true if this event is emitted
+- `VolanteMongo.connect` - start connection, only useful if using the defaults
 
 #### Mongo API
 
@@ -56,20 +48,31 @@ hub.emit('VolanteMongo.props', {
   Object, // the object to use as a query (this may include implementation-specific constructs)
   Function // the callback to call when the operation is complete
   ```
-- `volante.updateOne`
+- `mongo.updateOne`
   ```js
   String, // the full namespace (e.g. db.collection)
   String, // the _id of the object to update
   Object, // the update operation (see https://docs.mongodb.com/manual/reference/operator/update/)
   Function // the callback to call when the operation is complete
   ```
-- `volante.deleteOne`
+- `mongo.deleteOne`
   ```js
   String, // the full namespace (e.g. db.collection)
   String, // the _id of the object to delete
   Function // the callback to call when the operation is complete
   ```
-
+- `mongo.aggregate`
+  ```js
+  String, // the full namespace (e.g. db.collection)
+  Array, // the aggregation pipeline (see https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline/)
+  Function // the callback to call when the operation is complete
+  ```
+- `mongo.watch`
+  ```js
+  String, // the full namespace (e.g. db.collection)
+  Array, // the aggregation pipeline used to filter for ChangeStream events
+  Function // the callback to call when watch operation is triggered
+  ```
 
 #### CRUD Handling
 
@@ -101,7 +104,6 @@ When `handleCrud` is set to true, VolanteMongo will handle the following Volante
   Function // the callback to call when the operation is complete
   ```
 
-
 ### Emitted
 
 In addition to native Volante log events, this modules also emits:
@@ -109,33 +111,6 @@ In addition to native Volante log events, this modules also emits:
 - `VolanteMongo.connected` - on connected with Db object
   ```js
   mongo.Db // native driver Db object, can be used for any db driver calls
-  ```
-- `VolanteMongo.insert` - only when `oplog: true`
-  ```js
-  {
-    ns: String,          // full namespace
-    coll: String,        // collection name only
-    _id: mongo.ObjectId, // _id of inserted doc
-    o: Object            // entire inserted doc
-  }
-  ```
-- `VolanteMongo.update` - only when `oplog: true`
-  ```js
-  {
-    ns: String,          // full namespace
-    coll: String,        // collection name only
-    _id: mongo.ObjectId, // _id of updated doc
-    o: Object            // query mathing object
-  }
-  ```
-- `VolanteMongo.delete` - only when `oplog: true`
-  ```js
-  {
-    ns: String,          // full namespace
-    coll: String,        // collection name only
-    _id: mongo.ObjectId, // _id of deleted doc
-    o: Object            // object provided by oplog
-  }
   ```
 - `VolanteMongo.disconnected` - on disconnect or connection loss
 

@@ -1,6 +1,5 @@
 const mongo = require('mongodb');
 const MongoClient = mongo.MongoClient;
-const MongoOplog = require('mongo-oplog');
 
 //
 // Class manages a mongodb connection and emits events on connect and when
@@ -13,9 +12,6 @@ module.exports = {
 		// 'VolanteMongo.update' event with the proper info)
     'VolanteMongo.connect'() {
       this.connect();
-    },
-    'VolanteMongo.watch'(ns) {
-      this.watch(ns);
     },
     //
     // Volante CRUD API overlay
@@ -36,19 +32,22 @@ module.exports = {
     // standard mongo-specific API
     //
     'mongo.insertOne'(ns, doc, options, callback) {
-    	this.insertOne(ns, doc, options, callback);
+    	this.insertOne(...arguments);
     },
     'mongo.find'(ns, query, options, callback) {
-    	this.find(ns, query, options, callback);
+    	this.find(...arguments);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
-    	this.updateOne(ns, filter, update, options, callback);
+    	this.updateOne(...arguments);
     },
     'mongo.deleteOne'(ns, filter, options, callback) {
-    	this.deleteOne(ns, filter, options, callback);
+    	this.deleteOne(...arguments);
     },
     'mongo.aggregate'(ns, pipeline, callback) {
-    	this.aggregate(ns, pipeline, callback);
+    	this.aggregate(...arguments);
+    },
+    'mongo.watch'(ns, pipeline, callback) {
+    	this.watch(...arguments);
     },
   },
   done() {
@@ -65,8 +64,6 @@ module.exports = {
     dbopts: { // native node.js driver options
     	useNewUrlParser: true,
     },
-    oplog: false,
-    rsname: '$main',
     retryInterval: 10000,
   },
   data: {
@@ -99,16 +96,6 @@ module.exports = {
 		  .catch(err => this.mongoError(err));
 		},
 		//
-		// watch the specified namespace for changes
-		//
-		watch(collection) {
-		  this.oplog = true; // set to true as convenience
-		  if (this.watched.indexOf(collection) === -1) {
-		    this.$debug(`watching the ${collection} collection`);
-		    this.watched.push(collection);
-		  }
-		},
-		//
 		// Receives the freshly connected db object from the mongodb native driver
 		//
 		success(client) {
@@ -118,9 +105,6 @@ module.exports = {
 		  this.client = client;
 
 		  this.$emit('VolanteMongo.connected', this.client);
-		  if (this.oplog && this.watched.length > 0) {
-		    this.tailOplog();
-		  }
 
 			// attach events to admin db
 			let db = client.db('admin');
@@ -238,56 +222,19 @@ module.exports = {
 						});
 					}
 				});
+			} else {
+				this.$error('db client not ready');
 			}
 		},
-		//
-		// Start tailing the mongodb oplog
-		//
-		tailOplog() {
-		  this.$debug("initializing oplog connection");
-
-		  this.mongoOplog = MongoOplog(`mongodb://${this.dbhost}/local`, {
-		    ns: `(${this.watched.join('|')})`,
-		    coll: `oplog.${this.rsname}`
-		  });
-
-		  this.mongoOplog.on('insert', (doc) => {
-		    this.$emit(`VolanteMongo.insert`, {
-		      ns: doc.ns,
-		      coll: this.splitNamespace(doc.ns)[1],
-		      _id: doc.o._id,
-		      o: doc.o
-		    });
-		  });
-
-		  this.mongoOplog.on('update', (doc) => {
-		    this.$emit(`VolanteMongo.update`, {
-		      ns: doc.ns,
-		      coll: this.splitNamespace(doc.ns)[1],
-		      _id: doc.o2._id, // use the o2 object instead
-		      o: doc.o
-		    });
-		  });
-
-		  this.mongoOplog.on('delete', (doc) => {
-		    this.$emit(`VolanteMongo.delete`, {
-		      ns: doc.ns,
-		      coll: this.splitNamespace(doc.ns)[1],
-		      _id: doc.o._id,
-		      o: doc.o
-		    });
-		  });
-
-		  this.mongoOplog.on('error', (err) => {
-		  	// ignore certain errors
-		  	if (err.message === "No more documents in tailed cursor") return;
-		    this.$error(err);
-		  });
-
-		  // start the oplog tailing
-		  this.mongoOplog.tail()
-		  .then(() => this.$debug('oplog tailing started'))
-		  .catch((err) => this.$error(err));
+		watch(ns, pipeline, callback) {
+			if (this.client) {
+				this.$isDebug && this.$debug('watch', ns, pipeline);
+				this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' }).on('change', (data) => {
+					callback && callback(null, data);
+				});
+			} else {
+				this.$error('db client not ready');
+			}
 		},
 		//
 		// split namespace into db and collection name
@@ -296,6 +243,9 @@ module.exports = {
 			let s = ns.split('.');
 		  return [s[0], s.splice(1).join('.')];
 		},
+		//
+		// Get the native driver Collection object for the given namespace.
+		//
 		getCollection(ns) {
 			if (typeof(ns) !== 'string') {
 				throw this.$error('not valid namespace');
