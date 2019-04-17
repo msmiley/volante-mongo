@@ -122,7 +122,7 @@ module.exports = {
 		},
 		mongoError(err) {
 			this.$error(err);
-			if (err.errno === 'ECONNREFUSED') {
+			if (err.errno === 'ECONNREFUSED' || err.name === 'MongoNetworkError') {
 				this.$log(`retrying in ${this.retryInterval}ms`);
 				setTimeout(() => this.connect(), this.retryInterval);
 			}
