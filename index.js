@@ -20,7 +20,7 @@ module.exports = {
     	this.handleCrud && this.insertOne(name, obj, {}, callback);
     },
     'volante.read'(name, query, callback) {
-    	this.handleCrud && this.find(name, query, {}, callback);
+    	this.handleCrud && this.find(false, name, query, {}, callback);
     },
     'volante.update'(name, id, obj, callback) {
     	this.handleCrud && this.updateOne(name, { _id: mongo.ObjectID(id) }, { $set: obj }, {}, callback);
@@ -35,7 +35,10 @@ module.exports = {
     	this.insertOne(...arguments);
     },
     'mongo.find'(ns, query, options, callback) {
-    	this.find(...arguments);
+      this.find(false, ...arguments);
+    },
+    'mongo.findOne'(ns, query, options, callback) {
+      this.find(true, ...arguments);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
     	this.updateOne(...arguments);
@@ -133,12 +136,17 @@ module.exports = {
 		//
 		// Use mongodb node.js driver find()
 		//
-		find(ns, query, options, callback) {
+		find(findOne, ns, query, options, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('find', ns, query);
 				let coll = this.getCollection(ns);
-				if (typeof(query) === 'string') {
-					coll.findOne({ _id: mongo.ObjectID(query) }, (err, doc) => {
+				let q = query;
+        if (typeof(query) === 'string') {
+          q = { _id: mongo.ObjectID(query) };
+          findOne = true;
+        }
+        if (findOne) {
+					coll.findOne(q, options, (err, doc) => {
 						if (err) {
 							this.$error(err);
 							callback && callback(err);
@@ -147,7 +155,7 @@ module.exports = {
 						}
 					});
 				} else {
-					coll.find(query, options).toArray((err, docs) => {
+					coll.find(q, options).toArray((err, docs) => {
 						if (err) {
 							this.$error(err);
 							callback && callback(err);
