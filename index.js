@@ -121,6 +121,9 @@ module.exports = {
 		  });
 		},
 		mongoError(err) {
+			// black hole certain errors
+			if (err.codeName === 'NotMasterNoSlaveOk') return;
+			// log it
 			this.$error(err);
 			if (err.errno === 'ECONNREFUSED' || err.name === 'MongoNetworkError') {
 				this.$log(`retrying in ${this.retryInterval}ms`);
@@ -154,7 +157,7 @@ module.exports = {
 					});
 				}
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		//
@@ -172,7 +175,7 @@ module.exports = {
 					}
 				});
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		updateOne(ns, filter, update, options, callback) {
@@ -187,7 +190,7 @@ module.exports = {
 					}
 				});
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		deleteOne(ns, filter, options, callback) {
@@ -202,7 +205,7 @@ module.exports = {
 					}
 				});
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		aggregate(ns, pipeline, callback) {
@@ -223,7 +226,7 @@ module.exports = {
 					}
 				});
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		watch(ns, pipeline, callback) {
@@ -231,9 +234,9 @@ module.exports = {
 				this.$isDebug && this.$debug('watch', ns, pipeline);
 				this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' }).on('change', (data) => {
 					callback && callback(null, data);
-				});
+				}).on('error', err => this.mongoError(err));
 			} else {
-				this.$error('db client not ready');
+				callback && callback(this.$error('db client not ready'));
 			}
 		},
 		//
