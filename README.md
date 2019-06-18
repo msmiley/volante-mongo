@@ -108,10 +108,7 @@ When `handleCrud` is set to true, VolanteMongo will handle the following Volante
 
 In addition to native Volante log events, this modules also emits:
 
-- `VolanteMongo.connected` - on connected with Db object
-  ```js
-  mongo.Db // native driver Db object, can be used for any db driver calls
-  ```
+- `VolanteMongo.connected` - on connected
 - `VolanteMongo.disconnected` - on disconnect or connection loss
 
 ## License

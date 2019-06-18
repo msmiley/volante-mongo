@@ -107,7 +107,7 @@ module.exports = {
 		  // save to instance variable
 		  this.client = client;
 
-		  this.$emit('VolanteMongo.connected', this.client);
+		  this.$emit('VolanteMongo.connected');
 
 			// attach events to admin db
 			let db = client.db('admin');
@@ -120,7 +120,7 @@ module.exports = {
 		  // announce a reconnect
 		  db.on('reconnect', () => {
 		  	this.$log(`mongodb reconnected to ${this.dbhost}`);
-		  	this.$emit('VolanteMongo.connected', this.client);
+		  	this.$emit('VolanteMongo.connected');
 		  });
 		},
 		mongoError(err) {
