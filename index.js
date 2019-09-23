@@ -52,6 +52,9 @@ module.exports = {
     'mongo.watch'(ns, pipeline, callback) {
     	this.watch(...arguments);
     },
+    'mongo.distinct'(ns, field, query, callback) {
+    	this.distinct(...arguments);
+    },
   },
   done() {
   	if (this.client) {
@@ -243,6 +246,21 @@ module.exports = {
 				this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' }).on('change', (data) => {
 					callback && callback(null, data);
 				}).on('error', err => this.mongoError(err));
+			} else {
+				callback && callback(this.$error('db client not ready'));
+			}
+		},
+		distinct(ns, field, query, callback) {
+			if (this.client) {
+				this.$isDebug && this.$debug('distinct', ns, field, query);
+				this.getCollection(ns).distinct(field, query || {}, {}, (err, result) => {
+					if (err) {
+						this.$error(err);
+						callback && callback(err);
+					} else {
+						callback && callback(null, result);
+					}
+				});
 			} else {
 				callback && callback(this.$error('db client not ready'));
 			}
