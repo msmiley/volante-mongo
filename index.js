@@ -130,7 +130,7 @@ module.exports = {
 			// black hole certain errors
 			if (err.codeName === 'NotMasterNoSlaveOk') return;
 			// log it
-			this.$error(err);
+			this.$error('mongo error', err);
 			if (err.errno === 'ECONNREFUSED' || err.name === 'MongoNetworkError') {
 				this.$log(`retrying in ${this.retryInterval}ms`);
 				setTimeout(() => this.connect(), this.retryInterval);
@@ -151,7 +151,7 @@ module.exports = {
         if (findOne) {
 					coll.findOne(q, options, (err, doc) => {
 						if (err) {
-							this.$error(err);
+							this.$error('mongo error', err);
 							callback && callback(err);
 						} else {
 							callback && callback(null, doc);
@@ -160,7 +160,7 @@ module.exports = {
 				} else {
 					coll.find(q, options).toArray((err, docs) => {
 						if (err) {
-							this.$error(err);
+							this.$error('mongo error', err);
 							callback && callback(err);
 						} else {
 							callback && callback(null, docs);
@@ -179,7 +179,7 @@ module.exports = {
 				this.$isDebug && this.$debug('insertOne', ns, doc);
 				this.getCollection(ns).insertOne(doc, options, (err, result) => {
 					if (err) {
-						this.$error(err);
+						this.$error('mongo error', err);
 						callback && callback(err);
 					} else {
 						callback && callback(null, result);
@@ -194,7 +194,7 @@ module.exports = {
 				this.$isDebug && this.$debug('updateOne', ns, filter, update);
 				this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
 					if (err) {
-						this.$error(err);
+						this.$error('mongo error', err);
 						callback && callback(err);
 					} else {
 						callback && callback(null, result);
@@ -209,7 +209,7 @@ module.exports = {
 				this.$isDebug && this.$debug('deleteOne', ns, filter);
 				this.getCollection(ns).deleteOne(filter, options, (err, result) => {
 					if (err) {
-						this.$error(err);
+						this.$error('mongo error', err);
 						callback && callback(err);
 					} else {
 						callback && callback(null, result);
@@ -224,7 +224,7 @@ module.exports = {
 				this.$isDebug && this.$debug('aggregate', ns, pipeline);
 				this.getCollection(ns).aggregate(pipeline, {}, (err, cursor) => {
 					if (err) {
-						this.$error(err);
+						this.$error('mongo error', err);
 						callback && callback(err);
 					} else {
 						cursor.toArray((err, docs) => {
@@ -255,7 +255,7 @@ module.exports = {
 				this.$isDebug && this.$debug('distinct', ns, field, query);
 				this.getCollection(ns).distinct(field, query || {}, {}, (err, result) => {
 					if (err) {
-						this.$error(err);
+						this.$error('mongo error', err);
 						callback && callback(err);
 					} else {
 						callback && callback(null, result);
