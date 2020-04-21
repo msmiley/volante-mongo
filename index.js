@@ -72,9 +72,11 @@ module.exports = {
     },
     retryInterval: 10000,
   },
-  data: {
-		client: null, // MongoClient object
-		watched: [],  // watched namespaces
+  data() {
+		return {
+			client: null, // MongoClient object
+			watched: [],  // watched namespaces
+		};
   },
 	updated() {
 		this.handleCrud && this.$log('listening for volante CRUD operations');
