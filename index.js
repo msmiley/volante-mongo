@@ -40,19 +40,19 @@ module.exports = {
     'mongo.findOne'(ns, query, options, callback) {
       this.find(true, ...arguments);
     },
-    'mongo.findById'(ns, _id, options, callback) {
+    'mongo.findById'(ns, _id, callback) {
       this.find(true, { _id: mongo.ObjectID(_id) }, {}, callback);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
     	this.updateOne(...arguments);
     },
-    'mongo.updateById'(ns, _id, update, options, callback) {
+    'mongo.updateById'(ns, _id, update, callback) {
     	this.updateOne(ns, { _id: mongo.ObjectID(_id) }, { $set: update }, {}, callback);
     },
     'mongo.deleteOne'(ns, filter, options, callback) {
     	this.deleteOne(...arguments);
     },
-    'mongo.deleteById'(ns, _id, options, callback) {
+    'mongo.deleteById'(ns, _id, callback) {
     	this.deleteOne(ns, { _id: mongo.ObjectID(_id) }, {}, callback);
     },
     'mongo.aggregate'(ns, pipeline, callback) {
