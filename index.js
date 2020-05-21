@@ -202,6 +202,8 @@ module.exports = {
 		},
 		updateOne(ns, filter, update, options, callback) {
 			if (this.client) {
+				// make sure update doesn't try to change _id
+				delete update._id;
 				this.$isDebug && this.$debug('updateOne', ns, filter, update);
 				this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
 					if (err) {
