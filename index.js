@@ -41,7 +41,7 @@ module.exports = {
       this.find(true, ...arguments);
     },
     'mongo.findById'(ns, _id, callback) {
-      this.find(true, { _id: mongo.ObjectID(_id) }, {}, callback);
+      this.find(true, ns, { _id: mongo.ObjectID(_id) }, {}, callback);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
     	this.updateOne(...arguments);
