@@ -78,6 +78,7 @@ module.exports = {
     dbport: 27017,
     dbopts: { // native node.js driver options
     	useNewUrlParser: true,
+    	useUnifiedTopology: true,
     },
     retryInterval: 10000,
   },
