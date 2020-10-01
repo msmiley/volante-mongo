@@ -64,6 +64,9 @@ module.exports = {
     'mongo.distinct'(ns, field, query, callback) {
     	this.distinct(...arguments);
     },
+    'mongo.count'(ns, query, callback) {
+    	this.count(...arguments);
+    },
   },
   done() {
   	if (this.client) {
@@ -279,6 +282,19 @@ module.exports = {
 				});
 			} else {
 				callback && callback(this.$error('db client not ready'));
+			}
+		},
+		count(ns, query, callback) {
+			if (this.client) {
+				this.$isDebug && this.$debug('count', ns, query);
+				this.getCollection(ns).count(query, (err, result) => {
+					if (err) {
+						this.$error('mongo error', err);
+						callback && callback(err);
+					} else {
+						callback && callback(null, result);
+					}
+				});
 			}
 		},
 		//
