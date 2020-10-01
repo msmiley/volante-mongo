@@ -287,7 +287,7 @@ module.exports = {
 		count(ns, query, callback) {
 			if (this.client) {
 				this.$isDebug && this.$debug('count', ns, query);
-				this.getCollection(ns).count(query, (err, result) => {
+				this.getCollection(ns).countDocuments(query, (err, result) => {
 					if (err) {
 						this.$error('mongo error', err);
 						callback && callback(err);
