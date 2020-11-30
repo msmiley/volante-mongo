@@ -261,7 +261,7 @@ module.exports = {
 		},
 		watch(ns, pipeline, callback) {
 			if (this.client) {
-				this.$isDebug && this.$debug('watch', ns, pipeline);
+				this.$log(`watching ${ns} for changes with pipeline:`, pipeline);
 				this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' }).on('change', (data) => {
 					callback && callback(null, data);
 				}).on('error', err => this.mongoError(err));
