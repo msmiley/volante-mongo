@@ -1,13 +1,13 @@
 {
   "name": "volante-mongo",
-  "version": "4.2.1",
+  "version": "5.0.0",
   "description": "volante module for mongodb",
   "author": "Mike Smiley <msmiley@alumni.rice.edu>",
   "url": "https://github.com/msmiley/volante-mongo",
   "repository": "msmiley/volante-mongo.git",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^3.2.2"
+    "mongodb": "^3.6.3"
   },
   "keywords": [
     "volante"
