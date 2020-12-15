@@ -135,7 +135,7 @@ module.exports = {
       // save to instance variable
       this.client = client;
 
-      this.$emit('VolanteMongo.connected');
+      this.$emit('VolanteMongo.connected', this.client);
 
       // attach events to admin db
       let db = client.db('admin');
