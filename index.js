@@ -135,7 +135,9 @@ module.exports = {
       // save to instance variable
       this.client = client;
 
-      this.$emit('VolanteMongo.connected', this.client);
+      // alert subscribers that mongo is connected, if they need a reference to the client,
+      // they should use this.$hub.get('VolanteMongo').client
+      this.$emit('VolanteMongo.connected');
 
       // attach events to admin db
       let db = client.db('admin');
