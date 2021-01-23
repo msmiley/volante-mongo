@@ -213,6 +213,10 @@ module.exports = {
     find(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
+        // rehydrate _id
+        if (query._id && typeof(query._id) === 'string') {
+          query._id = mongo.ObjectID(query._id);
+        }
         this.$isDebug && this.$debug('find', ns, query);
         let coll = this.getCollection(ns);
         if (typeof(query) === 'string') {
@@ -237,6 +241,10 @@ module.exports = {
     findOne(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
+        // rehydrate _id
+        if (query._id && typeof(query._id) === 'string') {
+          query._id = mongo.ObjectID(query._id);
+        }
         this.$isDebug && this.$debug('findOne', ns, query);
         let coll = this.getCollection(ns);
         coll.findOne(query, options, (err, doc) => {
@@ -254,6 +262,10 @@ module.exports = {
     updateOne(ns, filter, update, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
+        // rehydrate _id in filter
+        if (filter._id && typeof(filter._id) === 'string') {
+          filter._id = mongo.ObjectID(filter._id);
+        }
         // make sure update doesn't try to change _id
         if (update.$set) {
           delete update.$set._id;
@@ -275,6 +287,10 @@ module.exports = {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
+        // rehydrate _id
+        if (filter._id && typeof(filter._id) === 'string') {
+          filter._id = mongo.ObjectID(filter._id);
+        }
         this.getCollection(ns).deleteOne(filter, options, (err, result) => {
           if (err) {
             this.$error('mongo error', err);
@@ -338,6 +354,10 @@ module.exports = {
     count(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
+        // rehydrate _id
+        if (query._id && typeof(query._id) === 'string') {
+          query._id = mongo.ObjectID(query._id);
+        }
         this.$isDebug && this.$debug('count', ns, query);
         this.getCollection(ns).countDocuments(query, options, (err, result) => {
           if (err) {
