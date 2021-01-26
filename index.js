@@ -58,6 +58,9 @@ module.exports = {
     'mongo.updateById'(ns, _id, update, options, callback) {
       this.updateOne(ns, { _id: mongo.ObjectID(_id) }, update, options, callback);
     },
+    'mongo.deleteMany'(ns, filter, options, callback) {
+      this.deleteMany(...arguments);
+    },
     'mongo.deleteOne'(ns, filter, options, callback) {
       this.deleteOne(...arguments);
     },
@@ -272,6 +275,22 @@ module.exports = {
         }
         this.$isDebug && this.$debug('updateOne', ns, filter, update);
         this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
+          }
+        });
+      } else {
+        callback && callback(this.$error('db client not ready'));
+      }
+    },
+    deleteMany(ns, filter, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        this.$isDebug && this.$debug('deleteMany', ns, filter);
+        this.getCollection(ns).deleteMany(filter, options, (err, result) => {
           if (err) {
             this.$error('mongo error', err);
             callback && callback(err);
