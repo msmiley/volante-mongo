@@ -29,10 +29,10 @@ module.exports = {
       this.handleCrud && this.find(name, query, {}, callback);
     },
     'volante.update'(name, id, obj, callback) {
-      this.handleCrud && this.updateOne(name, { _id: mongo.ObjectID(id) }, { $set: obj }, {}, callback);
+      this.handleCrud && this.updateOne(name, { _id: this.checkId(id) }, { $set: obj }, {}, callback);
     },
     'volante.delete'(name, id, callback) {
-      this.handleCrud && this.deleteOne(name, { _id: mongo.ObjectID(id) }, {}, callback);
+      this.handleCrud && this.deleteOne(name, { _id: this.checkId(id) }, {}, callback);
     },
     //
     // standard mongo-specific API
@@ -50,13 +50,13 @@ module.exports = {
       this.findOne(...arguments);
     },
     'mongo.findById'(ns, _id, options, callback) {
-      this.findOne(ns, { _id: mongo.ObjectID(_id) }, options, callback);
+      this.findOne(ns, { _id: this.checkId(_id) }, options, callback);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
       this.updateOne(...arguments);
     },
     'mongo.updateById'(ns, _id, update, options, callback) {
-      this.updateOne(ns, { _id: mongo.ObjectID(_id) }, update, options, callback);
+      this.updateOne(ns, { _id: this.checkId(_id) }, update, options, callback);
     },
     'mongo.deleteMany'(ns, filter, options, callback) {
       this.deleteMany(...arguments);
@@ -65,7 +65,7 @@ module.exports = {
       this.deleteOne(...arguments);
     },
     'mongo.deleteById'(ns, _id, options, callback) {
-      this.deleteOne(ns, { _id: mongo.ObjectID(_id) }, options, callback);
+      this.deleteOne(ns, { _id: this.checkId(_id) }, options, callback);
     },
     'mongo.aggregate'(ns, pipeline, options, callback) {
       this.aggregate(...arguments);
@@ -97,6 +97,7 @@ module.exports = {
     },
     retryInterval: 10000,
     namespaces: {},
+    promoteIds: true,
   },
   data() {
     return {
@@ -216,14 +217,15 @@ module.exports = {
     find(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
-        // rehydrate _id
-        if (query._id && typeof(query._id) === 'string') {
-          query._id = mongo.ObjectID(query._id);
+        // see if we need to rehydrate _id
+        if (query._id) {
+          query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('find', ns, query);
         let coll = this.getCollection(ns);
         if (typeof(query) === 'string') {
-          this.findOne(ns, { _id: mongo.ObjectID(query) }, options, callback);
+          // assume the string is an _id and try to fetch it
+          this.findOne(ns, { _id: this.checkId(query) }, options, callback);
         } else {
           coll.find(query, options).toArray((err, docs) => {
             if (err) {
@@ -244,9 +246,9 @@ module.exports = {
     findOne(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
-        // rehydrate _id
-        if (query._id && typeof(query._id) === 'string') {
-          query._id = mongo.ObjectID(query._id);
+        // see if we need to rehydrate _id
+        if (query._id) {
+          query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('findOne', ns, query);
         let coll = this.getCollection(ns);
@@ -265,9 +267,9 @@ module.exports = {
     updateOne(ns, filter, update, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
-        // rehydrate _id in filter
-        if (filter._id && typeof(filter._id) === 'string') {
-          filter._id = mongo.ObjectID(filter._id);
+        // see if we need to rehydrate _id in filter
+        if (filter._id) {
+          filter._id = this.checkId(filter._id);
         }
         // make sure update doesn't try to change _id
         if (update.$set) {
@@ -306,9 +308,9 @@ module.exports = {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
-        // rehydrate _id
-        if (filter._id && typeof(filter._id) === 'string') {
-          filter._id = mongo.ObjectID(filter._id);
+        // see if we need to rehydrate _id in filter
+        if (filter._id) {
+          filter._id = this.checkId(filter._id);
         }
         this.getCollection(ns).deleteOne(filter, options, (err, result) => {
           if (err) {
@@ -373,9 +375,9 @@ module.exports = {
     count(ns, query, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
-        // rehydrate _id
-        if (query._id && typeof(query._id) === 'string') {
-          query._id = mongo.ObjectID(query._id);
+        // see if we need to rehydrate _id
+        if (query._id) {
+          query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('count', ns, query);
         this.getCollection(ns).countDocuments(query, options, (err, result) => {
@@ -434,6 +436,16 @@ module.exports = {
         options,
         callback,
       };
+    },
+    //
+    // Check provided _id and promote it to an ObjectID if
+    // it's a string and promoteIds prop is true
+    //
+    checkId(_id) {
+      if (this.promoteIds && typeof(_id) === 'string') {
+        return mongo.ObjectID(_id);
+      }
+      return _id;
     },
   },
 };
