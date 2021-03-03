@@ -98,6 +98,14 @@ module.exports = {
     retryInterval: 10000,
     namespaces: {},
     promoteIds: true,
+    allowedUpdateOperators: [
+      '$set',
+      '$addToSet',
+      '$pullAll',
+      '$inc',
+      '$push',
+      '$each',
+    ],
   },
   data() {
     return {
@@ -446,6 +454,33 @@ module.exports = {
         return mongo.ObjectID(_id);
       }
       return _id;
+    },
+    //
+    // helper function to find $-prefixed object keys
+    //
+    recursiveSearch(obj, results = []) {
+      Object.keys(obj).forEach((key) => {
+        if (key.startsWith('$')) {
+          results.push(key);
+        }
+        if (typeof obj[key] === 'object') {
+          this.recursiveSearch(obj[key], results);
+        }
+      });
+      return results;
+    },
+    //
+    // basic middleware to sanitize a request body for mongo operators
+    // allowed operators can be set through the props
+    //
+    sanitize(req, res, next) {
+      let keys = this.recursiveSearch(req.body);
+      for (let k of keys) {
+        if (this.allowedUpdateOperators.indexOf(k) < 0) {
+          return res.status(400).send(`mongo operator: ${k} not allowed`);
+        }
+      }
+      next();
     },
   },
 };
