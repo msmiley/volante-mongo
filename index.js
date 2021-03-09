@@ -29,10 +29,10 @@ module.exports = {
       this.handleCrud && this.find(name, query, {}, callback);
     },
     'volante.update'(name, id, obj, callback) {
-      this.handleCrud && this.updateOne(name, { _id: mongo.ObjectID(id) }, { $set: obj }, {}, callback);
+      this.handleCrud && this.updateOne(name, { _id: this.checkId(id) }, { $set: obj }, {}, callback);
     },
     'volante.delete'(name, id, callback) {
-      this.handleCrud && this.deleteOne(name, { _id: mongo.ObjectID(id) }, {}, callback);
+      this.handleCrud && this.deleteOne(name, { _id: this.checkId(id) }, {}, callback);
     },
     //
     // standard mongo-specific API
@@ -50,19 +50,22 @@ module.exports = {
       this.findOne(...arguments);
     },
     'mongo.findById'(ns, _id, options, callback) {
-      this.findOne(ns, { _id: mongo.ObjectID(_id) }, options, callback);
+      this.findOne(ns, { _id: this.checkId(_id) }, options, callback);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
       this.updateOne(...arguments);
     },
     'mongo.updateById'(ns, _id, update, options, callback) {
-      this.updateOne(ns, { _id: mongo.ObjectID(_id) }, update, options, callback);
+      this.updateOne(ns, { _id: this.checkId(_id) }, update, options, callback);
+    },
+    'mongo.deleteMany'(ns, filter, options, callback) {
+      this.deleteMany(...arguments);
     },
     'mongo.deleteOne'(ns, filter, options, callback) {
       this.deleteOne(...arguments);
     },
     'mongo.deleteById'(ns, _id, options, callback) {
-      this.deleteOne(ns, { _id: mongo.ObjectID(_id) }, options, callback);
+      this.deleteOne(ns, { _id: this.checkId(_id) }, options, callback);
     },
     'mongo.aggregate'(ns, pipeline, options, callback) {
       this.aggregate(...arguments);
@@ -94,6 +97,15 @@ module.exports = {
     },
     retryInterval: 10000,
     namespaces: {},
+    promoteIds: true,
+    allowedUpdateOperators: [
+      '$set',
+      '$addToSet',
+      '$pullAll',
+      '$inc',
+      '$push',
+      '$each',
+    ],
   },
   data() {
     return {
@@ -148,7 +160,7 @@ module.exports = {
       // announce a reconnect
       db.on('reconnect', () => {
         this.$log(`mongodb reconnected to ${this.host}`);
-        this.$emit('VolanteMongo.connected');
+        this.$emit('VolanteMongo.connected', this.client);
       });
     },
     //
@@ -269,10 +281,38 @@ module.exports = {
         callback && callback(this.$error('db client not ready'));
       }
     },
+<<<<<<<<< saved version
+
+=========
+    deleteMany(ns, filter, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        this.$isDebug && this.$debug('deleteMany', ns, filter);
+        this.getCollection(ns).deleteMany(filter, options, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
+          }
+        });
+      } else {
+        callback && callback(this.$error('db client not ready'));
+      }
+    },
+>>>>>>>>> local version
     deleteOne(ns, filter, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
+<<<<<<<<< saved version
+
+=========
+        // see if we need to rehydrate _id in filter
+        if (filter._id) {
+          filter._id = this.checkId(filter._id);
+        }
+>>>>>>>>> local version
         this.getCollection(ns).deleteOne(filter, options, (err, result) => {
           if (err) {
             this.$error('mongo error', err);
@@ -393,6 +433,47 @@ module.exports = {
         options,
         callback,
       };
+<<<<<<<<< saved version
+
+=========
+    },
+    //
+    // Check provided _id and promote it to an ObjectID if
+    // it's a string and promoteIds prop is true
+    //
+    checkId(_id) {
+      if (this.promoteIds && typeof(_id) === 'string') {
+        return mongo.ObjectID(_id);
+      }
+      return _id;
+    },
+    //
+    // helper function to find $-prefixed object keys
+    //
+    recursiveSearch(obj, results = []) {
+      Object.keys(obj).forEach((key) => {
+        if (key.startsWith('$')) {
+          results.push(key);
+        }
+        if (typeof obj[key] === 'object') {
+          this.recursiveSearch(obj[key], results);
+        }
+      });
+      return results;
+    },
+    //
+    // basic middleware to sanitize a request body for mongo operators
+    // allowed operators can be set through the props
+    //
+    sanitize(req, res, next) {
+      let keys = this.recursiveSearch(req.body);
+      for (let k of keys) {
+        if (this.allowedUpdateOperators.indexOf(k) < 0) {
+          return res.status(400).send(`mongo operator: ${k} not allowed`);
+        }
+      }
+      next();
+>>>>>>>>> local version
     },
   },
 };
