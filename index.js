@@ -281,9 +281,6 @@ module.exports = {
         callback && callback(this.$error('db client not ready'));
       }
     },
-<<<<<<<<< saved version
-
-=========
     deleteMany(ns, filter, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
@@ -300,19 +297,14 @@ module.exports = {
         callback && callback(this.$error('db client not ready'));
       }
     },
->>>>>>>>> local version
     deleteOne(ns, filter, ...optionsAndCallback) {
       let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
-<<<<<<<<< saved version
-
-=========
         // see if we need to rehydrate _id in filter
         if (filter._id) {
           filter._id = this.checkId(filter._id);
         }
->>>>>>>>> local version
         this.getCollection(ns).deleteOne(filter, options, (err, result) => {
           if (err) {
             this.$error('mongo error', err);
@@ -433,9 +425,6 @@ module.exports = {
         options,
         callback,
       };
-<<<<<<<<< saved version
-
-=========
     },
     //
     // Check provided _id and promote it to an ObjectID if
@@ -473,7 +462,6 @@ module.exports = {
         }
       }
       next();
->>>>>>>>> local version
     },
   },
 };
