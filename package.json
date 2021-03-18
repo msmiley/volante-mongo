@@ -7,7 +7,7 @@
   "repository": "msmiley/volante-mongo.git",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^3.6.3"
+    "mongodb": "^3.6.5"
   },
   "keywords": [
     "volante"
