@@ -79,6 +79,9 @@ module.exports = {
     'mongo.count'(ns, query, options, callback) {
       this.count(...arguments);
     },
+    'mongo.joinById'(ns, query, foreignKey, foreignNs, options, callback) {
+      this.joinById(...arguments);
+    },
   },
   done() {
     if (this.client) {
@@ -230,12 +233,11 @@ module.exports = {
           query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('find', ns, query);
-        let coll = this.getCollection(ns);
         if (typeof(query) === 'string') {
           // assume the string is an _id and try to fetch it
           this.findOne(ns, { _id: this.checkId(query) }, options, callback);
         } else {
-          coll.find(query, options).toArray((err, docs) => {
+          this.getCollection(ns).find(query, options).toArray((err, docs) => {
             if (err) {
               this.$error('mongo error', err);
               callback && callback(err);
@@ -259,8 +261,7 @@ module.exports = {
           query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('findOne', ns, query);
-        let coll = this.getCollection(ns);
-        coll.findOne(query, options, (err, doc) => {
+        this.getCollection(ns).findOne(query, options, (err, doc) => {
           if (err) {
             this.$error('mongo error', err);
             callback && callback(err);
@@ -395,6 +396,44 @@ module.exports = {
           } else {
             callback && callback(null, result);
           }
+        });
+      }
+    },
+    // custom left outer join function, uses Promises to join in a foreign document
+    // looked up by _id. foreignKey will contain array of foreign document matches
+    joinById(ns, query, foreignKey, foreignNs, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        this.getCollection(ns).find(query, options).toArray((err, docs) => {
+          if (err) {
+            return this.$error('mongo error', err);
+          }
+          let subOps = [];
+          for (let d of docs) {
+            let q;
+            let fk = d[foreignKey];
+            if (Array.isArray(fk)) {
+              let aryOfOid = [];
+              for (let k of fk) {
+                aryOfOid.push(this.checkId(k));
+              }
+              q = { _id: { $in: aryOfOid }};
+            } else {
+              q = { _id: this.checkId(fk) };
+            }
+            subOps.push(new Promise((resolve, reject) => {
+              this.getCollection(foreignNs).find(q).toArray((err, tags) => {
+                if (err) {
+                  return reject(err);
+                }
+                d.tag_ids = tags;
+                resolve(d);
+              });
+            }));
+          }
+          Promise.all(subOps).then((rslt) => {
+            callback && callback(null, rslt);
+          });
         });
       }
     },
