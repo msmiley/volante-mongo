@@ -82,6 +82,9 @@ module.exports = {
     'mongo.joinById'(ns, query, foreignKey, foreignNs, options, callback) {
       this.joinById(...arguments);
     },
+    'mongo.createIndexes'(ns, indexes, callback) {
+      this.createIndexes(...arguments);
+    },
   },
   done() {
     if (this.client) {
@@ -434,6 +437,23 @@ module.exports = {
           Promise.all(subOps).then((rslt) => {
             callback && callback(null, rslt);
           });
+        });
+      }
+    },
+    //
+    // call the mongo createIndexes function, this one takes the raw index spec
+    // https://docs.mongodb.com/manual/reference/command/createIndexes/
+    //
+    createIndexes(ns, indexes, callback) {
+      if (this.client) {
+        this.$isDebug && this.$debug('createIndexes', ns, indexes);
+        this.getCollection(ns).createIndexes(indexes, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
+          }
         });
       }
     },
