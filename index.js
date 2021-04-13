@@ -108,6 +108,7 @@ module.exports = {
       '$set',
       '$addToSet',
       '$pullAll',
+      '$pull',
       '$inc',
       '$push',
       '$each',
@@ -536,7 +537,7 @@ module.exports = {
       let keys = this.recursiveSearch(req.body);
       for (let k of keys) {
         if (this.allowedUpdateOperators.indexOf(k) < 0) {
-          return res.status(400).send(`mongo operator: ${k} not allowed`);
+          return res.status(400).send(`mongo operator: ${k} not allowed by volante-mongo.sanitize`);
         }
       }
       next();
