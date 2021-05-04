@@ -510,7 +510,8 @@ module.exports = {
     // it's a string and promoteIds prop is true
     //
     checkId(_id) {
-      if (this.promoteIds && typeof(_id) === 'string') {
+      // check to see if this can be an ObjectID
+      if (this.promoteIds && typeof(_id) === 'string' && _id.length === 24) {
         return mongo.ObjectID(_id);
       }
       return _id;
