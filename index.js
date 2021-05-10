@@ -29,10 +29,18 @@ module.exports = {
       this.handleCrud && this.find(name, query, {}, callback);
     },
     'volante.update'(name, id, obj, callback) {
-      this.handleCrud && this.updateOne(name, { _id: this.checkId(id) }, { $set: obj }, {}, callback);
+      this.handleCrud &&
+        this.updateOne(
+          name,
+          { _id: this.checkId(id) },
+          { $set: obj },
+          {},
+          callback
+        );
     },
     'volante.delete'(name, id, callback) {
-      this.handleCrud && this.deleteOne(name, { _id: this.checkId(id) }, {}, callback);
+      this.handleCrud &&
+        this.deleteOne(name, { _id: this.checkId(id) }, {}, callback);
     },
     //
     // standard mongo-specific API
@@ -85,6 +93,15 @@ module.exports = {
     'mongo.createIndexes'(ns, indexes, callback) {
       this.createIndexes(...arguments);
     },
+    'mongo.openUploadStream'(ns, filename, options, callback) {
+      this.openUploadStream(...arguments);
+    },
+    'mongo.openDownloadStream'(ns, fileId, options, callback) {
+      this.openDownloadStream(...arguments);
+    },
+    'mongo.deleteFile'(ns, fileid, options, callback) {
+      this.deleteFile(...arguments);
+    },
   },
   done() {
     if (this.client) {
@@ -97,7 +114,8 @@ module.exports = {
     handleCrud: false, // flag whether module should listen for crud events
     host: '127.0.0.1',
     port: 27017,
-    dbopts: { // native node.js driver options
+    dbopts: {
+      // native node.js driver options
       useNewUrlParser: true,
       useUnifiedTopology: true,
     },
@@ -117,7 +135,7 @@ module.exports = {
   data() {
     return {
       client: null, // MongoClient object
-      watched: [],  // watched namespaces
+      watched: [], // watched namespaces
     };
   },
   updated() {
@@ -140,10 +158,9 @@ module.exports = {
       this.$debug(`full mongo url: ${fullhost}`);
 
       // initiate connect
-      MongoClient
-      .connect(fullhost, this.dbopts)
-      .then(client => this.success(client))
-      .catch(err => this.mongoError(err));
+      MongoClient.connect(fullhost, this.dbopts)
+        .then((client) => this.success(client))
+        .catch((err) => this.mongoError(err));
     },
     //
     // Receives the freshly connected db object from the mongodb native driver
@@ -180,10 +197,12 @@ module.exports = {
       if (err.codeName === 'NotMasterNoSlaveOk') return;
       // log it
       this.$error('mongo error', err);
-      if (err.errno === 'ECONNREFUSED' ||
-          err.errno === 'EHOSTDOWN' ||
-          err.name === 'MongoNetworkError' ||
-          err.name === 'MongoServerSelectionError') {
+      if (
+        err.errno === 'ECONNREFUSED' ||
+        err.errno === 'EHOSTDOWN' ||
+        err.name === 'MongoNetworkError' ||
+        err.name === 'MongoServerSelectionError'
+      ) {
         this.$log(`retrying in ${this.retryInterval}ms`);
         setTimeout(() => this.connect(), this.retryInterval);
       }
@@ -192,7 +211,9 @@ module.exports = {
     // Use mongodb node.js driver insertOne()
     //
     insertOne(ns, doc, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('insertOne', ns, doc);
         this.getCollection(ns).insertOne(doc, options, (err, result) => {
@@ -211,7 +232,9 @@ module.exports = {
     // Use mongodb node.js driver insertMany()
     //
     insertMany(ns, docs, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('insertMany', ns, docs);
         this.getCollection(ns).insertMany(docs, options, (err, result) => {
@@ -230,25 +253,29 @@ module.exports = {
     // Use mongodb node.js driver find()
     //
     find(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
           query._id = this.checkId(query._id);
         }
         this.$isDebug && this.$debug('find', ns, query);
-        if (typeof(query) === 'string') {
+        if (typeof query === 'string') {
           // assume the string is an _id and try to fetch it
           this.findOne(ns, { _id: this.checkId(query) }, options, callback);
         } else {
-          this.getCollection(ns).find(query, options).toArray((err, docs) => {
-            if (err) {
-              this.$error('mongo error', err);
-              callback && callback(err);
-            } else {
-              callback && callback(null, docs);
-            }
-          });
+          this.getCollection(ns)
+            .find(query, options)
+            .toArray((err, docs) => {
+              if (err) {
+                this.$error('mongo error', err);
+                callback && callback(err);
+              } else {
+                callback && callback(null, docs);
+              }
+            });
         }
       } else {
         callback && callback(this.$error('db client not ready'));
@@ -258,7 +285,9 @@ module.exports = {
     // Use mongodb node.js driver findOne()
     //
     findOne(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
@@ -278,7 +307,9 @@ module.exports = {
       }
     },
     updateOne(ns, filter, update, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         // see if we need to rehydrate _id in filter
         if (filter._id) {
@@ -289,20 +320,27 @@ module.exports = {
           delete update.$set._id;
         }
         this.$isDebug && this.$debug('updateOne', ns, filter, update);
-        this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
-          if (err) {
-            this.$error('mongo error', err);
-            callback && callback(err);
-          } else {
-            callback && callback(null, result);
+        this.getCollection(ns).updateOne(
+          filter,
+          update,
+          options,
+          (err, result) => {
+            if (err) {
+              this.$error('mongo error', err);
+              callback && callback(err);
+            } else {
+              callback && callback(null, result);
+            }
           }
-        });
+        );
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     deleteMany(ns, filter, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('deleteMany', ns, filter);
         this.getCollection(ns).deleteMany(filter, options, (err, result) => {
@@ -318,7 +356,9 @@ module.exports = {
       }
     },
     deleteOne(ns, filter, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
         // see if we need to rehydrate _id in filter
@@ -338,7 +378,9 @@ module.exports = {
       }
     },
     aggregate(ns, pipeline, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('aggregate', ns, pipeline);
         this.getCollection(ns).aggregate(pipeline, options, (err, cursor) => {
@@ -362,31 +404,43 @@ module.exports = {
     watch(ns, pipeline, callback) {
       if (this.client) {
         this.$log(`watching ${ns} for changes with pipeline:`, pipeline);
-        this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' }).on('change', (data) => {
-          callback && callback(null, data);
-        }).on('error', err => this.mongoError(err));
+        this.getCollection(ns)
+          .watch(pipeline, { fullDocument: 'updateLookup' })
+          .on('change', (data) => {
+            callback && callback(null, data);
+          })
+          .on('error', (err) => this.mongoError(err));
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     distinct(ns, field, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         this.$isDebug && this.$debug('distinct', ns, field, query);
-        this.getCollection(ns).distinct(field, query || {}, options, (err, result) => {
-          if (err) {
-            this.$error('mongo error', err);
-            callback && callback(err);
-          } else {
-            callback && callback(null, result);
+        this.getCollection(ns).distinct(
+          field,
+          query || {},
+          options,
+          (err, result) => {
+            if (err) {
+              this.$error('mongo error', err);
+              callback && callback(err);
+            } else {
+              callback && callback(null, result);
+            }
           }
-        });
+        );
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     count(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
@@ -406,39 +460,47 @@ module.exports = {
     // custom left outer join function, uses Promises to join in a foreign document
     // looked up by _id. foreignKey will contain array of foreign document matches
     joinById(ns, query, foreignKey, foreignNs, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
       if (this.client) {
-        this.getCollection(ns).find(query, options).toArray((err, docs) => {
-          if (err) {
-            return this.$error('mongo error', err);
-          }
-          let subOps = [];
-          for (let d of docs) {
-            let q;
-            let fk = d[foreignKey];
-            if (Array.isArray(fk)) {
-              let aryOfOid = [];
-              for (let k of fk) {
-                aryOfOid.push(this.checkId(k));
-              }
-              q = { _id: { $in: aryOfOid }};
-            } else {
-              q = { _id: this.checkId(fk) };
+        this.getCollection(ns)
+          .find(query, options)
+          .toArray((err, docs) => {
+            if (err) {
+              return this.$error('mongo error', err);
             }
-            subOps.push(new Promise((resolve, reject) => {
-              this.getCollection(foreignNs).find(q).toArray((err, tags) => {
-                if (err) {
-                  return reject(err);
+            let subOps = [];
+            for (let d of docs) {
+              let q;
+              let fk = d[foreignKey];
+              if (Array.isArray(fk)) {
+                let aryOfOid = [];
+                for (let k of fk) {
+                  aryOfOid.push(this.checkId(k));
                 }
-                d.tag_ids = tags;
-                resolve(d);
-              });
-            }));
-          }
-          Promise.all(subOps).then((rslt) => {
-            callback && callback(null, rslt);
+                q = { _id: { $in: aryOfOid } };
+              } else {
+                q = { _id: this.checkId(fk) };
+              }
+              subOps.push(
+                new Promise((resolve, reject) => {
+                  this.getCollection(foreignNs)
+                    .find(q)
+                    .toArray((err, tags) => {
+                      if (err) {
+                        return reject(err);
+                      }
+                      d.tag_ids = tags;
+                      resolve(d);
+                    });
+                })
+              );
+            }
+            Promise.all(subOps).then((rslt) => {
+              callback && callback(null, rslt);
+            });
           });
-        });
       }
     },
     //
@@ -472,7 +534,7 @@ module.exports = {
     // Get the native driver Collection object for the given namespace.
     //
     getCollection(ns) {
-      if (typeof(ns) !== 'string') {
+      if (typeof ns !== 'string') {
         throw this.$error('not valid namespace');
       } else {
         let sns = this.splitNamespace(ns);
@@ -486,15 +548,41 @@ module.exports = {
             this.$error('cannot find namespace in config');
           }
         }
+
+        // handle gridfs collections that end with .files or .chunks
+        if (sns.length === 3) {
+          return this.client.db(sns[0]).collection(`${sns[1]}.${sns[2]}`);
+        }
+
         return this.client.db(sns[0]).collection(sns[1]);
       }
     },
     //
+    // Get the database for the given namespace
+    //
+    getDatabase(ns) {
+      if (typeof ns !== 'string') {
+        throw this.$error('not valid namespace');
+      } else {
+        let sns = this.splitNamespace(ns);
+        if (sns.length === 1) {
+          // if provided string is not full namespace, try to lookup in
+          // this.namespaces and use the value as the namespace
+          let configNs = this.namespaces[ns];
+          if (configNs) {
+            sns = this.splitNamespace(configNs);
+          } else {
+            this.$error('cannot find namespace in config');
+          }
+        }
+        return this.client.db(sns[0]);
+      }
+    },
     // handle skipped options param
     // i.e. callback provided in options place
     //
     handleSkippedOptions(options, callback) {
-      if (typeof(options) === 'function') {
+      if (typeof options === 'function') {
         return {
           options: {},
           callback: options,
@@ -538,10 +626,66 @@ module.exports = {
       let keys = this.recursiveSearch(req.body);
       for (let k of keys) {
         if (this.allowedUpdateOperators.indexOf(k) < 0) {
-          return res.status(400).send(`mongo operator: ${k} not allowed by volante-mongo.sanitize`);
+          return res
+            .status(400)
+            .send(`mongo operator: ${k} not allowed by volante-mongo.sanitize`);
         }
       }
       next();
+    },
+    //
+    // upload a file to mongo gridfs
+    //
+    openUploadStream(ns, filename, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
+
+      if (this.client) {
+        this.$isDebug && this.$debug('openUploadStream', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        var uploadStream = bucket.openUploadStream(filename);
+        callback && callback(null, uploadStream);
+      }
+    },
+    //
+    // download a file from mongo gridfs
+    //
+    openDownloadStream(ns, fileId, ...optionsAndCallback) {
+      console.log('inside openDownloadStream');
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
+
+      if (this.client) {
+        this.$isDebug && this.$debug('openDownloadStream', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        var downloadStream = bucket.openDownloadStream(mongo.ObjectID(fileId));
+        console.log('downloadstream created successfully');
+        callback && callback(null, downloadStream);
+      }
+    },
+    //
+    // delete a file from mongo gridfs
+    //
+    deleteFile(ns, fileId, ...optionsAndCallback) {
+      console.log('inside deleteFile');
+      let { options, callback } = this.handleSkippedOptions(
+        ...optionsAndCallback
+      );
+
+      if (this.client) {
+        this.$isDebug && this.$debug('deleteFile', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        bucket.delete(mongo.ObjectID(fileId));
+        callback && callback(null, 'success');
+      }
     },
   },
 };
