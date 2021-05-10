@@ -159,8 +159,8 @@ module.exports = {
 
       // initiate connect
       MongoClient.connect(fullhost, this.dbopts)
-        .then((client) => this.success(client))
-        .catch((err) => this.mongoError(err));
+      .then((client) => this.success(client))
+      .catch((err) => this.mongoError(err));
     },
     //
     // Receives the freshly connected db object from the mongodb native driver
@@ -197,12 +197,10 @@ module.exports = {
       if (err.codeName === 'NotMasterNoSlaveOk') return;
       // log it
       this.$error('mongo error', err);
-      if (
-        err.errno === 'ECONNREFUSED' ||
+      if (err.errno === 'ECONNREFUSED' ||
         err.errno === 'EHOSTDOWN' ||
         err.name === 'MongoNetworkError' ||
-        err.name === 'MongoServerSelectionError'
-      ) {
+				err.name === 'MongoServerSelectionError') {
         this.$log(`retrying in ${this.retryInterval}ms`);
         setTimeout(() => this.connect(), this.retryInterval);
       }
@@ -211,9 +209,7 @@ module.exports = {
     // Use mongodb node.js driver insertOne()
     //
     insertOne(ns, doc, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('insertOne', ns, doc);
         this.getCollection(ns).insertOne(doc, options, (err, result) => {
@@ -232,9 +228,7 @@ module.exports = {
     // Use mongodb node.js driver insertMany()
     //
     insertMany(ns, docs, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('insertMany', ns, docs);
         this.getCollection(ns).insertMany(docs, options, (err, result) => {
@@ -253,9 +247,7 @@ module.exports = {
     // Use mongodb node.js driver find()
     //
     find(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
@@ -266,16 +258,14 @@ module.exports = {
           // assume the string is an _id and try to fetch it
           this.findOne(ns, { _id: this.checkId(query) }, options, callback);
         } else {
-          this.getCollection(ns)
-            .find(query, options)
-            .toArray((err, docs) => {
-              if (err) {
-                this.$error('mongo error', err);
-                callback && callback(err);
-              } else {
-                callback && callback(null, docs);
-              }
-            });
+          this.getCollection(ns).find(query, options).toArray((err, docs) => {
+            if (err) {
+              this.$error('mongo error', err);
+              callback && callback(err);
+            } else {
+              callback && callback(null, docs);
+            }
+          });
         }
       } else {
         callback && callback(this.$error('db client not ready'));
@@ -285,9 +275,7 @@ module.exports = {
     // Use mongodb node.js driver findOne()
     //
     findOne(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
@@ -307,9 +295,7 @@ module.exports = {
       }
     },
     updateOne(ns, filter, update, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         // see if we need to rehydrate _id in filter
         if (filter._id) {
@@ -320,27 +306,20 @@ module.exports = {
           delete update.$set._id;
         }
         this.$isDebug && this.$debug('updateOne', ns, filter, update);
-        this.getCollection(ns).updateOne(
-          filter,
-          update,
-          options,
-          (err, result) => {
-            if (err) {
-              this.$error('mongo error', err);
-              callback && callback(err);
-            } else {
-              callback && callback(null, result);
-            }
+        this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
           }
-        );
+        });
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     deleteMany(ns, filter, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteMany', ns, filter);
         this.getCollection(ns).deleteMany(filter, options, (err, result) => {
@@ -356,9 +335,7 @@ module.exports = {
       }
     },
     deleteOne(ns, filter, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteOne', ns, filter);
         // see if we need to rehydrate _id in filter
@@ -378,9 +355,7 @@ module.exports = {
       }
     },
     aggregate(ns, pipeline, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('aggregate', ns, pipeline);
         this.getCollection(ns).aggregate(pipeline, options, (err, cursor) => {
@@ -404,43 +379,33 @@ module.exports = {
     watch(ns, pipeline, callback) {
       if (this.client) {
         this.$log(`watching ${ns} for changes with pipeline:`, pipeline);
-        this.getCollection(ns)
-          .watch(pipeline, { fullDocument: 'updateLookup' })
-          .on('change', (data) => {
-            callback && callback(null, data);
-          })
-          .on('error', (err) => this.mongoError(err));
+        this.getCollection(ns).watch(pipeline, { fullDocument: 'updateLookup' })
+        .on('change', (data) => {
+          callback && callback(null, data);
+        })
+        .on('error', (err) => this.mongoError(err));
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     distinct(ns, field, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('distinct', ns, field, query);
-        this.getCollection(ns).distinct(
-          field,
-          query || {},
-          options,
-          (err, result) => {
-            if (err) {
-              this.$error('mongo error', err);
-              callback && callback(err);
-            } else {
-              callback && callback(null, result);
-            }
+        this.getCollection(ns).distinct(field, query || {}, options, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
           }
-        );
+        });
       } else {
         callback && callback(this.$error('db client not ready'));
       }
     },
     count(ns, query, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         // see if we need to rehydrate _id
         if (query._id) {
@@ -460,47 +425,41 @@ module.exports = {
     // custom left outer join function, uses Promises to join in a foreign document
     // looked up by _id. foreignKey will contain array of foreign document matches
     joinById(ns, query, foreignKey, foreignNs, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
-        this.getCollection(ns)
-          .find(query, options)
-          .toArray((err, docs) => {
-            if (err) {
-              return this.$error('mongo error', err);
-            }
-            let subOps = [];
-            for (let d of docs) {
-              let q;
-              let fk = d[foreignKey];
-              if (Array.isArray(fk)) {
-                let aryOfOid = [];
-                for (let k of fk) {
-                  aryOfOid.push(this.checkId(k));
-                }
-                q = { _id: { $in: aryOfOid } };
-              } else {
-                q = { _id: this.checkId(fk) };
+        this.getCollection(ns).find(query, options).toArray((err, docs) => {
+          if (err) {
+            return this.$error('mongo error', err);
+          }
+          let subOps = [];
+          for (let d of docs) {
+            let q;
+            let fk = d[foreignKey];
+            if (Array.isArray(fk)) {
+              let aryOfOid = [];
+              for (let k of fk) {
+                aryOfOid.push(this.checkId(k));
               }
-              subOps.push(
-                new Promise((resolve, reject) => {
-                  this.getCollection(foreignNs)
-                    .find(q)
-                    .toArray((err, tags) => {
-                      if (err) {
-                        return reject(err);
-                      }
-                      d.tag_ids = tags;
-                      resolve(d);
-                    });
-                })
-              );
+              q = { _id: { $in: aryOfOid }};
+            } else {
+              q = { _id: this.checkId(fk) };
             }
-            Promise.all(subOps).then((rslt) => {
-              callback && callback(null, rslt);
-            });
+            subOps.push(
+              new Promise((resolve, reject) => {
+                this.getCollection(foreignNs).find(q).toArray((err, tags) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  d.tag_ids = tags;
+                  resolve(d);
+                });
+              })
+            );
+          }
+          Promise.all(subOps).then((rslt) => {
+            callback && callback(null, rslt);
           });
+        });
       }
     },
     //
@@ -619,16 +578,14 @@ module.exports = {
       return results;
     },
     //
-    // basic middleware to sanitize a request body for mongo operators
+    // basic express.js middleware to sanitize a request body for mongo operators
     // allowed operators can be set through the props
     //
     sanitize(req, res, next) {
       let keys = this.recursiveSearch(req.body);
       for (let k of keys) {
         if (this.allowedUpdateOperators.indexOf(k) < 0) {
-          return res
-            .status(400)
-            .send(`mongo operator: ${k} not allowed by volante-mongo.sanitize`);
+          return res.status(400).send(`mongo operator: ${k} not allowed by volante-mongo.sanitize`);
         }
       }
       next();
@@ -637,10 +594,7 @@ module.exports = {
     // upload a file to mongo gridfs
     //
     openUploadStream(ns, filename, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
-
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('openUploadStream', ns);
         var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
@@ -654,18 +608,13 @@ module.exports = {
     // download a file from mongo gridfs
     //
     openDownloadStream(ns, fileId, ...optionsAndCallback) {
-      console.log('inside openDownloadStream');
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
-
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('openDownloadStream', ns);
         var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
           bucketName: ns,
         });
         var downloadStream = bucket.openDownloadStream(mongo.ObjectID(fileId));
-        console.log('downloadstream created successfully');
         callback && callback(null, downloadStream);
       }
     },
@@ -673,11 +622,7 @@ module.exports = {
     // delete a file from mongo gridfs
     //
     deleteFile(ns, fileId, ...optionsAndCallback) {
-      console.log('inside deleteFile');
-      let { options, callback } = this.handleSkippedOptions(
-        ...optionsAndCallback
-      );
-
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
       if (this.client) {
         this.$isDebug && this.$debug('deleteFile', ns);
         var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
