@@ -432,9 +432,12 @@ module.exports = {
             return this.$error('mongo error', err);
           }
           let subOps = [];
+          // for all docs in left collection which match the query
           for (let d of docs) {
             let q;
+            // pull out the foreign key
             let fk = d[foreignKey];
+            // support arrays of foreign keys
             if (Array.isArray(fk)) {
               let aryOfOid = [];
               for (let k of fk) {
@@ -444,18 +447,18 @@ module.exports = {
             } else {
               q = { _id: this.checkId(fk) };
             }
-            subOps.push(
-              new Promise((resolve, reject) => {
-                this.getCollection(foreignNs).find(q).toArray((err, tags) => {
-                  if (err) {
-                    return reject(err);
-                  }
-                  d.tag_ids = tags;
-                  resolve(d);
-                });
-              })
-            );
+            // add a promise which retrieves the doc from the foreign collection by id
+            subOps.push(new Promise((resolve, reject) => {
+              this.getCollection(foreignNs).find(q).toArray((err, foreignDocs) => {
+                if (err) {
+                  return reject(err);
+                }
+                d[foreignKey] = foreignDocs;
+                resolve(d);
+              });
+            }));
           }
+          // perform the lookups and return after they're all collected in an array
           Promise.all(subOps).then((rslt) => {
             callback && callback(null, rslt);
           });
