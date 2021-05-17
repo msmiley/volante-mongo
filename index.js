@@ -2,45 +2,44 @@ const mongo = require('mongodb');
 const MongoClient = mongo.MongoClient;
 
 //
-// Class manages a mongodb connection and emits events on connect and when
+// module manages a mongodb connection and emits events on connect and when
 // a watched namespace is changed.
 //
 module.exports = {
   name: 'VolanteMongo',
+  props: {
+    enabled: true,     // global enable flag, won't connect if false
+    host: '127.0.0.1', // mongo host
+    port: 27017,       // mongo port
+    dbopts: {          // native node.js driver options
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    },
+    retryInterval: 10000,     // connect retry interval
+    namespaces: {},           // namespace dictionary for centralized management of namespaces
+    promoteIds: true,         // flag if volante-mongo should attempt to promote strings to _id
+    allowedUpdateOperators: [ // operators exempt from sanitize
+      '$set',
+      '$addToSet',
+      '$pullAll',
+      '$pull',
+      '$inc',
+      '$push',
+      '$each',
+    ],
+  },
   init() {
-    if (this.configProps) {
+    if (this.configProps && this.enabled) {
       this.$log('attempting to connect using config props');
       this.connect();
     }
   },
   events: {
-    // force connect (only necessary if defaults are used, otherwise, emit a
-    // 'VolanteMongo.update' event with the proper info)
-    'VolanteMongo.connect'() {
+    // request a call to connect()
+    // (only necessary if defaults are used, otherwise, emit a
+    // 'VolanteMongo.update' event with the proper info), or use the volante config file
+    'mongo.connect'() {
       this.connect();
-    },
-    //
-    // Volante CRUD API overlay
-    //
-    'volante.create'(name, obj, callback) {
-      this.handleCrud && this.insertOne(name, obj, {}, callback);
-    },
-    'volante.read'(name, query, callback) {
-      this.handleCrud && this.find(name, query, {}, callback);
-    },
-    'volante.update'(name, id, obj, callback) {
-      this.handleCrud &&
-        this.updateOne(
-          name,
-          { _id: this.checkId(id) },
-          { $set: obj },
-          {},
-          callback
-        );
-    },
-    'volante.delete'(name, id, callback) {
-      this.handleCrud &&
-        this.deleteOne(name, { _id: this.checkId(id) }, {}, callback);
     },
     //
     // standard mongo-specific API
@@ -99,7 +98,7 @@ module.exports = {
     'mongo.openDownloadStream'(ns, fileId, options, callback) {
       this.openDownloadStream(...arguments);
     },
-    'mongo.deleteFile'(ns, fileid, options, callback) {
+    'mongo.deleteFile'(ns, fileid, callback) {
       this.deleteFile(...arguments);
     },
   },
@@ -110,28 +109,6 @@ module.exports = {
       this.$log('MongoClient closed');
     }
   },
-  props: {
-    handleCrud: false, // flag whether module should listen for crud events
-    host: '127.0.0.1',
-    port: 27017,
-    dbopts: {
-      // native node.js driver options
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    },
-    retryInterval: 10000,
-    namespaces: {},
-    promoteIds: true,
-    allowedUpdateOperators: [
-      '$set',
-      '$addToSet',
-      '$pullAll',
-      '$pull',
-      '$inc',
-      '$push',
-      '$each',
-    ],
-  },
   data() {
     return {
       client: null, // MongoClient object
@@ -139,7 +116,6 @@ module.exports = {
     };
   },
   updated() {
-    this.handleCrud && this.$log('listening for volante CRUD operations');
     this.connect();
   },
   methods: {
@@ -147,20 +123,24 @@ module.exports = {
     // Process the provided options and connect to mongodb
     //
     connect() {
-      this.$log(`Connecting to mongodb at: ${this.host}`);
+      if (this.enabled) {
+        this.$log(`Connecting to mongodb at: ${this.host}`);
 
-      var fullhost = this.host;
+        var fullhost = this.host;
 
-      // add full mongodb:// schema if not provided
-      if (!fullhost.match(/^mongodb:\/\/.*/)) {
-        fullhost = `mongodb://${this.host}:${this.port}`;
+        // add full mongodb:// schema if not provided
+        if (!fullhost.match(/^mongodb:\/\/.*/)) {
+          fullhost = `mongodb://${this.host}:${this.port}`;
+        }
+        this.$debug(`full mongo url: ${fullhost}`);
+
+        // initiate connect
+        MongoClient.connect(fullhost, this.dbopts)
+        .then((client) => this.success(client))
+        .catch((err) => this.mongoError(err));
+      } else {
+        this.$warn('refusing to connect because enabled=false');
       }
-      this.$debug(`full mongo url: ${fullhost}`);
-
-      // initiate connect
-      MongoClient.connect(fullhost, this.dbopts)
-      .then((client) => this.success(client))
-      .catch((err) => this.mongoError(err));
     },
     //
     // Receives the freshly connected db object from the mongodb native driver
@@ -174,6 +154,7 @@ module.exports = {
       // alert subscribers that mongo is connected, if they need a reference to the client,
       // they should use this.$hub.get('VolanteMongo').client
       this.$emit('VolanteMongo.connected');
+      this.$emit('mongo.connected');
 
       // attach events to admin db
       let db = client.db('admin');
@@ -483,6 +464,56 @@ module.exports = {
       }
     },
     //
+    // upload a file to mongo gridfs
+    //
+    openUploadStream(ns, filename, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        this.$isDebug && this.$debug('openUploadStream', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        var uploadStream = bucket.openUploadStream(filename, options);
+        callback && callback(null, uploadStream);
+      }
+    },
+    //
+    // download a file from mongo gridfs
+    //
+    openDownloadStream(ns, fileId, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        this.$isDebug && this.$debug('openDownloadStream', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        var downloadStream = bucket.openDownloadStream(mongo.ObjectID(fileId), options);
+        callback && callback(null, downloadStream);
+      }
+    },
+    //
+    // delete a file from mongo gridfs
+    //
+    deleteFile(ns, fileId, callback) {
+      if (this.client) {
+        this.$isDebug && this.$debug('deleteFile', ns);
+        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
+          bucketName: ns,
+        });
+        bucket.delete(mongo.ObjectID(fileId), (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
+          }
+        });
+      }
+    },
+    ///////////////////////////////////////////////////
+    // UTILITY FUNCTIONS START HERE
+    ///////////////////////////////////////////////////
+    //
     // split namespace into db and collection name
     //
     splitNamespace(ns) {
@@ -557,13 +588,15 @@ module.exports = {
     },
     //
     // Check provided _id and promote it to an ObjectID if
-    // it's a string and promoteIds prop is true
+    // it's a string and promoteIds prop is true,
+    // this method can be used by user modules instead of having to call mongo.ObjectId directly
     //
     checkId(_id) {
       // check to see if this can be an ObjectID
       if (this.promoteIds && typeof(_id) === 'string' && _id.length === 24) {
         return mongo.ObjectID(_id);
       }
+      this.$isDebug && this.$debug(`checkId won't promote ${_id} to an ObjectID, make sure that is what you expect`);
       return _id;
     },
     //
@@ -592,48 +625,6 @@ module.exports = {
         }
       }
       next();
-    },
-    //
-    // upload a file to mongo gridfs
-    //
-    openUploadStream(ns, filename, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
-      if (this.client) {
-        this.$isDebug && this.$debug('openUploadStream', ns);
-        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
-          bucketName: ns,
-        });
-        var uploadStream = bucket.openUploadStream(filename);
-        callback && callback(null, uploadStream);
-      }
-    },
-    //
-    // download a file from mongo gridfs
-    //
-    openDownloadStream(ns, fileId, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
-      if (this.client) {
-        this.$isDebug && this.$debug('openDownloadStream', ns);
-        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
-          bucketName: ns,
-        });
-        var downloadStream = bucket.openDownloadStream(mongo.ObjectID(fileId));
-        callback && callback(null, downloadStream);
-      }
-    },
-    //
-    // delete a file from mongo gridfs
-    //
-    deleteFile(ns, fileId, ...optionsAndCallback) {
-      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
-      if (this.client) {
-        this.$isDebug && this.$debug('deleteFile', ns);
-        var bucket = new mongo.GridFSBucket(this.getDatabase(ns), {
-          bucketName: ns,
-        });
-        bucket.delete(mongo.ObjectID(fileId));
-        callback && callback(null, 'success');
-      }
     },
   },
 };
