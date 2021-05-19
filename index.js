@@ -57,13 +57,13 @@ module.exports = {
       this.findOne(...arguments);
     },
     'mongo.findById'(ns, _id, options, callback) {
-      this.findOne(ns, { _id: this.checkId(_id) }, options, callback);
+      this.findOne(ns, { _id }, options, callback);
     },
     'mongo.updateOne'(ns, filter, update, options, callback) {
       this.updateOne(...arguments);
     },
     'mongo.updateById'(ns, _id, update, options, callback) {
-      this.updateOne(ns, { _id: this.checkId(_id) }, update, options, callback);
+      this.updateOne(ns, { _id }, update, options, callback);
     },
     'mongo.deleteMany'(ns, filter, options, callback) {
       this.deleteMany(...arguments);
@@ -72,7 +72,7 @@ module.exports = {
       this.deleteOne(...arguments);
     },
     'mongo.deleteById'(ns, _id, options, callback) {
-      this.deleteOne(ns, { _id: this.checkId(_id) }, options, callback);
+      this.deleteOne(ns, { _id }, options, callback);
     },
     'mongo.aggregate'(ns, pipeline, options, callback) {
       this.aggregate(...arguments);
