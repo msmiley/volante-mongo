@@ -62,6 +62,9 @@ module.exports = {
     'mongo.updateOne'(ns, filter, update, options, callback) {
       this.updateOne(...arguments);
     },
+    'mongo.updateMany'(ns, filter, update, options, callback) {
+      this.updateMany(...arguments);
+    },
     'mongo.updateById'(ns, _id, update, options, callback) {
       this.updateOne(ns, { _id }, update, options, callback);
     },
@@ -288,6 +291,30 @@ module.exports = {
         }
         this.$isDebug && this.$debug('updateOne', ns, filter, update);
         this.getCollection(ns).updateOne(filter, update, options, (err, result) => {
+          if (err) {
+            this.$error('mongo error', err);
+            callback && callback(err);
+          } else {
+            callback && callback(null, result);
+          }
+        });
+      } else {
+        callback && callback(this.$error('db client not ready'));
+      }
+    },
+    updateMany(ns, filter, update, ...optionsAndCallback) {
+      let { options, callback } = this.handleSkippedOptions(...optionsAndCallback);
+      if (this.client) {
+        // see if we need to rehydrate _id in filter
+        if (filter._id) {
+          filter._id = this.checkId(filter._id);
+        }
+        // make sure update doesn't try to change _id
+        if (update.$set) {
+          delete update.$set._id;
+        }
+        this.$isDebug && this.$debug('updateMany', ns, filter, update);
+        this.getCollection(ns).updateMany(filter, update, options, (err, result) => {
           if (err) {
             this.$error('mongo error', err);
             callback && callback(err);
