@@ -113,6 +113,7 @@ module.exports = {
     return {
       client: null, // MongoClient object
       watched: [], // watched namespaces
+      mongo // access to the driver pkg
     };
   },
   updated() {
