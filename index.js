@@ -62,9 +62,6 @@ module.exports = {
     'mongo.updateOne'(ns, filter, update, options, callback) {
       this.updateOne(...arguments);
     },
-    'mongo.updateMany'(ns, filter, update, options, callback) {
-      this.updateMany(...arguments);
-    },
     'mongo.updateById'(ns, _id, update, options, callback) {
       this.updateOne(ns, { _id }, update, options, callback);
     },
