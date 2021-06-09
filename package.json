@@ -1,6 +1,6 @@
 {
   "name": "volante-mongo",
-  "version": "6.2.0",
+  "version": "6.2.1",
   "description": "volante module for mongodb",
   "author": "Mike Smiley <msmiley@alumni.rice.edu>",
   "url": "https://github.com/msmiley/volante-mongo",
